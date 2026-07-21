@@ -276,6 +276,10 @@ import UserNotifications
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
+    super.application(
+      application,
+      didRegisterForRemoteNotificationsWithDeviceToken: deviceToken
+    )
     apnsToken = deviceToken.map { String(format: "%02x", $0) }.joined()
     finishNotifications(granted: true, token: apnsToken)
   }
@@ -284,6 +288,10 @@ import UserNotifications
     _ application: UIApplication,
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
+    super.application(
+      application,
+      didFailToRegisterForRemoteNotificationsWithError: error
+    )
     finishNotifications(
       error: FlutterError(
         code: "registration_failed",
@@ -303,7 +311,11 @@ import UserNotifications
     if let error {
       result(error)
     } else {
-      result(["granted": granted, "token": token as Any])
+      var payload: [String: Any] = ["granted": granted]
+      if let token {
+        payload["token"] = token
+      }
+      result(payload)
     }
   }
 }

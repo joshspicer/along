@@ -276,11 +276,26 @@ func TestPairAuthorizationSessionConcurrencyAndReplay(t *testing.T) {
 	); err != nil {
 		t.Fatalf("import offline solo session: %v", err)
 	}
+	pausedOfflineID := uuid.New()
+	pausedOfflineCompleted := time.Now().Add(-40 * time.Minute).UTC()
+	if _, _, err := data.ImportSoloSession(
+		context.Background(),
+		jamieIdentity,
+		uuid.New(),
+		pausedOfflineID,
+		pausedOfflineCompleted.Add(-2*time.Hour),
+		pausedOfflineCompleted,
+	); err != nil {
+		t.Fatalf("import paused offline solo session: %v", err)
+	}
 	history, err := data.SessionHistory(context.Background(), jamieIdentity, nil, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(history) != 2 || history[0].ID != sessionID || history[1].ID != offlineID {
+	if len(history) != 3 ||
+		history[0].ID != sessionID ||
+		history[1].ID != pausedOfflineID ||
+		history[2].ID != offlineID {
 		t.Fatalf("history order = %#v", sessionIDs(history))
 	}
 	events, cursor, err := data.PairEvents(context.Background(), alexIdentity, 0, 100)

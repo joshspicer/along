@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
@@ -44,6 +45,13 @@ class SessionRepository {
       entityId: session.id,
       createdAt: now,
     );
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity.isNotEmpty &&
+        connectivity.every((result) => result == ConnectivityResult.none)) {
+      final offline = session.copyWith(offlineOrigin: true);
+      await _database.upsertSession(offline);
+      return offline;
+    }
     await _database.upsertSession(session, pendingSync: true);
     await _database.enqueue(command);
     try {
@@ -54,10 +62,9 @@ class SessionRepository {
         await _database.deleteSession(session.id);
         rethrow;
       }
-      await _database.removeCommand(command.id);
-      final offline = session.copyWith(offlineOrigin: true);
-      await _database.upsertSession(offline);
-      return offline;
+      // The request may have reached the server. Retain its idempotency key so
+      // reconnect resolves the ambiguity without opening a duplicate room.
+      return session;
     } on SyncCommandException {
       await _database.deleteSession(session.id);
       rethrow;

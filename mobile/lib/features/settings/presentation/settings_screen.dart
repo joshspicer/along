@@ -125,9 +125,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               : 'Last used ${_date(session['last_seen_at'])}',
                           onRevoke: () => _revoke(
                             'Sign out this session?',
-                            () => ref
-                                .read(authRepositoryProvider)
-                                .revokeSession(session['id']! as String),
+                            () => session['current'] == true
+                                ? ref
+                                      .read(authControllerProvider.notifier)
+                                      .logout()
+                                : ref
+                                      .read(authRepositoryProvider)
+                                      .revokeSession(session['id']! as String),
                           ),
                         ),
                       const Divider(height: 32),
@@ -145,9 +149,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           subtitle: install['platform']! as String,
                           onRevoke: () => _revoke(
                             'Revoke this installation?',
-                            () => ref
-                                .read(authRepositoryProvider)
-                                .revokeInstallation(install['id']! as String),
+                            () async {
+                              await ref
+                                  .read(authRepositoryProvider)
+                                  .revokeInstallation(install['id']! as String);
+                              if (install['id'] == account.installationId) {
+                                await ref
+                                    .read(authControllerProvider.notifier)
+                                    .logout();
+                              }
+                            },
                           ),
                         ),
                     ],

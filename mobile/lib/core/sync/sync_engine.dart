@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:web_socket_channel/io.dart';
 
 import '../../features/focus/domain/focus_session.dart';
@@ -34,14 +35,27 @@ class SyncEngine {
     _serverOffset = await _database.serverOffset();
   }
 
-  Future<void> syncNow({bool throwOnCommandError = false}) {
+  Future<void> syncNow({bool throwOnCommandError = false}) async {
     final active = _activeSync;
     if (active != null) {
-      return active;
+      await active;
+      if (identical(_activeSync, active)) {
+        _activeSync = null;
+      }
+      if ((await _database.pendingCommands(limit: 1)).isNotEmpty) {
+        await syncNow(throwOnCommandError: throwOnCommandError);
+      }
+      return;
     }
     final future = _performSync(throwOnCommandError: throwOnCommandError);
     _activeSync = future;
-    return future.whenComplete(() => _activeSync = null);
+    try {
+      await future;
+    } finally {
+      if (identical(_activeSync, future)) {
+        _activeSync = null;
+      }
+    }
   }
 
   void startRealtime() {
@@ -113,7 +127,11 @@ class SyncEngine {
       await _database.setCursor(body['cursor']! as int);
     });
     if ((body['events']! as List<Object?>).isNotEmpty) {
-      await _refreshHistory();
+      try {
+        await _refreshHistory();
+      } on DioException {
+        // Applied cursor data stays valid; history retries on the next sync.
+      }
     }
     if (throwOnCommandError && commandError != null) {
       throw commandError!;

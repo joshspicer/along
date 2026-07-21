@@ -274,7 +274,7 @@ func (s *Store) ImportSoloSession(
 	if identity.PairID == nil {
 		return domain.FocusSession{}, false, ErrNotFound
 	}
-	if startedAt.After(completedAt) || completedAt.Sub(startedAt) > 25*time.Minute ||
+	if startedAt.After(completedAt) || completedAt.Sub(startedAt) > 24*time.Hour ||
 		completedAt.After(s.now().Add(2*time.Minute)) {
 		return domain.FocusSession{}, false, ErrConflict
 	}

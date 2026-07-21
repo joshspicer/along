@@ -1,7 +1,9 @@
+import 'generated_commit.dart';
+
 abstract final class AppConfig {
   static const apiBaseUrl = String.fromEnvironment(
     'ALONG_API_BASE_URL',
-    defaultValue: 'https://api.along.app',
+    defaultValue: 'https://along.app',
   );
   static const apnsEnvironment = String.fromEnvironment(
     'ALONG_APNS_ENVIRONMENT',
@@ -9,7 +11,7 @@ abstract final class AppConfig {
   );
   static const gitCommit = String.fromEnvironment(
     'ALONG_GIT_COMMIT',
-    defaultValue: 'unknown',
+    defaultValue: generatedGitCommit,
   );
 
   static Uri get webSocketUri {

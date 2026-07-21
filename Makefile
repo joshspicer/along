@@ -25,7 +25,7 @@ integration-test:
 	./scripts/test-integration.sh
 
 mobile-check:
-	cd mobile && fvm flutter format --set-exit-if-changed lib test integration_test
+	cd mobile && fvm dart format --output=none --set-exit-if-changed lib test
 	cd mobile && fvm flutter analyze --fatal-infos
 
 mobile-test:
@@ -41,4 +41,3 @@ compose-down:
 	docker compose down --remove-orphans
 
 validate: server-check integration-test mobile-check mobile-test docker-build
-

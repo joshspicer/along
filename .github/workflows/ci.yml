@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go checks and integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_PASSWORD: along
+          POSTGRES_DB: along_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d along_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.5
+          cache-dependency-path: server/go.sum
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Unit tests
+        run: go test -race -coverprofile=coverage.out ./...
+      - name: WebAuthn and PostgreSQL integration
+        env:
+          INTEGRATION_DATABASE_URL: postgres://postgres:along@127.0.0.1:5432/along_test?sslmode=disable
+        run: go test -race -tags=integration -count=1 ./integration/...
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: server/coverage.out
+
+  flutter:
+    name: Flutter analysis, tests, and Android
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.6
+          channel: stable
+          cache: true
+      - uses: gradle/actions/setup-gradle@v5
+      - run: flutter pub get
+      - name: Verify generated code
+        run: |
+          dart run build_runner build
+          git diff --exit-code -- '*.g.dart' '*.freezed.dart'
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze --fatal-infos
+      - run: flutter test --coverage
+      - name: Build Android debug APK
+        run: >-
+          flutter build apk --debug
+          --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
+          --dart-define=ALONG_API_BASE_URL=https://along.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+
+  ios:
+    name: Unsigned iOS simulator
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.6
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build simulator app
+        run: >-
+          flutter build ios --simulator --no-codesign
+          --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
+          --dart-define=ALONG_API_BASE_URL=https://along.app
+      - name: Archive simulator artifact
+        run: ditto -c -k --sequesterRsrc build/ios/iphonesimulator/Runner.app build/Runner-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator
+          path: mobile/build/Runner-simulator.zip
+
+  container:
+    name: Container, migrations, and security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          load: true
+          tags: along-server:ci
+          build-args: GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Scan image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: along-server:ci
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Build backup utility
+        run: docker build -t along-backup:ci deploy/backup
+      - name: Scan backup utility
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: along-backup:ci
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Migration and read-only smoke test
+        env:
+          ALONG_TEST_IMAGE: along-server:ci
+        run: ./scripts/test-image.sh

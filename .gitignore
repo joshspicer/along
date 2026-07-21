@@ -24,6 +24,10 @@ mobile/.flutter-plugins
 mobile/.flutter-plugins-dependencies
 mobile/.packages
 mobile/.fvm/
+mobile/.fvm-cache/
+mobile/.fvm-macos/
+mobile/.fvm-macos.zip
+mobile/.gradle-cache/
 mobile/build/
 mobile/coverage/
 mobile/android/.gradle/
@@ -36,7 +40,6 @@ mobile/ios/.symlinks/
 mobile/ios/Runner/GeneratedPluginRegistrant.*
 
 # Local infrastructure
-data/
-backups/
+/data/
+/backups/
 *.log
-

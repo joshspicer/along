@@ -749,6 +749,50 @@ func (s *Store) PairEvents(ctx context.Context, identity domain.AuthIdentity, cu
 }
 
 func (s *Store) completeElapsedSession(ctx context.Context, tx pgx.Tx, pairID uuid.UUID) error {
+	staleRows, err := tx.Query(ctx, `
+		SELECT id
+		FROM focus_sessions
+		WHERE pair_id = $1
+		  AND state = 'paused'
+		  AND paused_at <= clock_timestamp() - interval '24 hours'
+		FOR UPDATE`,
+		pairID,
+	)
+	if err != nil {
+		return err
+	}
+	var staleIDs []uuid.UUID
+	for staleRows.Next() {
+		var id uuid.UUID
+		if err := staleRows.Scan(&id); err != nil {
+			staleRows.Close()
+			return err
+		}
+		staleIDs = append(staleIDs, id)
+	}
+	staleRows.Close()
+	if err := staleRows.Err(); err != nil {
+		return err
+	}
+	for _, id := range staleIDs {
+		if _, err := tx.Exec(ctx, `
+			UPDATE focus_sessions
+			SET state = 'expired', pause_origin = NULL, paused_at = NULL,
+			    version = version + 1, updated_at = clock_timestamp()
+			WHERE id = $1`,
+			id,
+		); err != nil {
+			return err
+		}
+		session, err := readSession(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := appendPairEvent(ctx, tx, pairID, "session.expired", &id, nil, session); err != nil {
+			return err
+		}
+	}
+
 	rows, err := tx.Query(ctx, `
 		SELECT id, ends_at
 		FROM focus_sessions

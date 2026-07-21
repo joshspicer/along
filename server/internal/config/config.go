@@ -36,13 +36,18 @@ type Config struct {
 	APNSPollInterval     time.Duration
 	APNSBatchSize        int
 	AllowInsecureDevKeys bool
+	TrustProxyHeaders    bool
 }
 
 func Load() (Config, error) {
+	databaseURL, err := envOrFile("DATABASE_URL")
+	if err != nil {
+		return Config{}, err
+	}
 	cfg := Config{
 		Environment:        env("ALONG_ENV", "development"),
 		HTTPAddress:        env("HTTP_ADDRESS", ":8080"),
-		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		DatabaseURL:        databaseURL,
 		PublicBaseURL:      env("PUBLIC_BASE_URL", "https://localhost"),
 		WebAuthnRPID:       env("WEBAUTHN_RP_ID", "localhost"),
 		WebAuthnRPOrigins:  splitCSV(env("WEBAUTHN_RP_ORIGINS", "https://localhost")),
@@ -63,8 +68,8 @@ func Load() (Config, error) {
 		APNSBatchSize:      integer("APNS_BATCH_SIZE", 50),
 	}
 	cfg.AllowInsecureDevKeys, _ = strconv.ParseBool(os.Getenv("ALONG_ALLOW_INSECURE_DEV_KEYS"))
+	cfg.TrustProxyHeaders, _ = strconv.ParseBool(os.Getenv("TRUST_PROXY_HEADERS"))
 
-	var err error
 	cfg.JWTSigningKey, err = secret("JWT_SIGNING_KEY", cfg.AllowInsecureDevKeys, "along-development-jwt-key-change-me")
 	if err != nil {
 		return Config{}, err
@@ -181,7 +186,10 @@ func splitCSV(value string) []string {
 }
 
 func secret(name string, allowDevelopment bool, developmentValue string) ([]byte, error) {
-	value := strings.TrimSpace(os.Getenv(name))
+	value, err := envOrFile(name)
+	if err != nil {
+		return nil, err
+	}
 	if value == "" {
 		if !allowDevelopment {
 			return nil, fmt.Errorf("%s is required (base64 encoded)", name)
@@ -193,4 +201,20 @@ func secret(name string, allowDevelopment bool, developmentValue string) ([]byte
 		return nil, fmt.Errorf("%s must be valid base64: %w", name, err)
 	}
 	return decoded, nil
+}
+
+func envOrFile(name string) (string, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	file := strings.TrimSpace(os.Getenv(name + "_FILE"))
+	if value != "" && file != "" {
+		return "", fmt.Errorf("set only one of %s or %s_FILE", name, name)
+	}
+	if file == "" {
+		return value, nil
+	}
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return "", fmt.Errorf("read %s_FILE: %w", name, err)
+	}
+	return strings.TrimSpace(string(content)), nil
 }

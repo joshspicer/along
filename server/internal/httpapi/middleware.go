@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -88,6 +89,18 @@ func (w *responseRecorder) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
 }
 
+func (w *responseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return hijacker.Hijack()
+}
+
+func (w *responseRecorder) Flush() {
+	_ = http.NewResponseController(w.ResponseWriter).Flush()
+}
+
 func (w *responseRecorder) WriteHeader(status int) {
 	w.status = status
 	w.ResponseWriter.WriteHeader(status)
@@ -129,6 +142,11 @@ func (a *API) rateLimitMiddleware(limiter *rateLimiter) func(http.Handler) http.
 			host, _, err := net.SplitHostPort(r.RemoteAddr)
 			if err != nil {
 				host = r.RemoteAddr
+			}
+			if a.cfg.TrustProxyHeaders {
+				if forwarded := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0]); net.ParseIP(forwarded) != nil {
+					host = forwarded
+				}
 			}
 			if !limiter.allow(host, time.Now()) {
 				w.Header().Set("Retry-After", "60")

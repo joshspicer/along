@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/joshspicer/along/server/internal/apperror"
 	"github.com/joshspicer/along/server/internal/store"
@@ -37,7 +39,7 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 func (a *API) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	appError := mapError(err)
 	if appError.RetryAfter > 0 {
-		w.Header().Set("Retry-After", http.StatusText(appError.RetryAfter))
+		w.Header().Set("Retry-After", strconv.Itoa(appError.RetryAfter))
 	}
 	if appError.Status >= 500 {
 		a.logger.Error("request failed",
@@ -63,6 +65,20 @@ func (a *API) writeError(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func mapError(err error) *apperror.Error {
+	var postgresError *pgconn.PgError
+	if errors.As(err, &postgresError) {
+		switch postgresError.Code {
+		case "40001":
+			return &apperror.Error{
+				Code:    "version_conflict",
+				Message: "The resource changed concurrently. Sync and try again.",
+				Status:  http.StatusConflict,
+				Details: map[string]any{"resync_required": true},
+			}
+		case "23505":
+			return apperror.ErrConflict
+		}
+	}
 	switch {
 	case err == nil:
 		return apperror.New(http.StatusInternalServerError, "internal_error", "Something went wrong.")

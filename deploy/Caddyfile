@@ -1,0 +1,56 @@
+{
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+{$ALONG_DOMAIN:localhost} {
+	encode zstd gzip
+
+	@apple path /.well-known/apple-app-site-association
+	handle @apple {
+		header Content-Type application/json
+		root * /srv/well-known
+		rewrite * /apple-app-site-association
+		file_server
+	}
+
+	@android path /.well-known/assetlinks.json
+	handle @android {
+		header Content-Type application/json
+		root * /srv/well-known
+		rewrite * /assetlinks.json
+		file_server
+	}
+
+	handle_path /privacy* {
+		root * /srv/site/privacy
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle_path /support* {
+		root * /srv/site/support
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle {
+		reverse_proxy api:8080 {
+			health_uri /health/ready
+			health_interval 15s
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -16,16 +16,22 @@ surveillance, or engagement-pressure mechanics.
 
 ## Local development
 
-Copy `.env.example` to `.env`, use development-only values, then run:
+Copy `.env.example` to `.env`, use development-only identifiers, and create
+local secrets:
 
 ```sh
-docker compose up --build
+./scripts/generate-secrets.sh
+docker compose up --build postgres migrate api caddy
 ```
 
 The API is available through Caddy at `https://localhost` (development
-certificate) and directly at `http://localhost:8080`. See
+certificate). See
 [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for setup and operations.
+
+Native passkeys require an owned HTTPS relying-party domain. See
+[`docs/PASSKEYS_AND_DOMAINS.md`](docs/PASSKEYS_AND_DOMAINS.md) before device
+testing. API behavior is summarized in [`docs/API.md`](docs/API.md), with the
+machine-readable contract at `server/openapi.yaml`.
 
 Go is pinned to 1.26.5. Flutter is pinned through FVM to 3.44.6 / Dart 3.12.2.
 No credentials or generated build directories belong in source control.
-

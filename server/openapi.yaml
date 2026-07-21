@@ -1,0 +1,569 @@
+openapi: 3.1.0
+info:
+  title: Along API
+  version: 1.0.0
+  description: Private passkey-first pair collaboration and cursor sync.
+servers:
+  - url: https://along.app
+security:
+  - bearerAuth: []
+paths:
+  /health/live:
+    get:
+      security: []
+      operationId: live
+      responses:
+        "200":
+          description: Process is live.
+  /health/ready:
+    get:
+      security: []
+      operationId: ready
+      responses:
+        "200":
+          description: Process and PostgreSQL are ready.
+        "500":
+          $ref: "#/components/responses/Error"
+  /v1/auth/register/options:
+    post:
+      security: []
+      operationId: beginRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [display_name]
+              properties:
+                display_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+      responses:
+        "200":
+          $ref: "#/components/responses/CeremonyOptions"
+        "422":
+          $ref: "#/components/responses/Error"
+  /v1/auth/register/finish:
+    post:
+      security: []
+      operationId: finishRegistration
+      parameters:
+        - $ref: "#/components/parameters/Challenge"
+        - $ref: "#/components/parameters/Installation"
+        - $ref: "#/components/parameters/Platform"
+        - $ref: "#/components/parameters/DeviceName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw WebAuthn PublicKeyCredential creation response.
+              additionalProperties: true
+      responses:
+        "201":
+          $ref: "#/components/responses/AuthResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "410":
+          $ref: "#/components/responses/Error"
+  /v1/auth/login/options:
+    post:
+      security: []
+      operationId: beginLogin
+      responses:
+        "200":
+          $ref: "#/components/responses/CeremonyOptions"
+  /v1/auth/login/finish:
+    post:
+      security: []
+      operationId: finishLogin
+      parameters:
+        - $ref: "#/components/parameters/Challenge"
+        - $ref: "#/components/parameters/Installation"
+        - $ref: "#/components/parameters/Platform"
+        - $ref: "#/components/parameters/DeviceName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw WebAuthn PublicKeyCredential assertion response.
+              additionalProperties: true
+      responses:
+        "200":
+          $ref: "#/components/responses/AuthResult"
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/auth/refresh:
+    post:
+      security: []
+      operationId: refresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/AuthResult"
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/auth/recover:
+    post:
+      security: []
+      operationId: recover
+      parameters:
+        - $ref: "#/components/parameters/Installation"
+        - $ref: "#/components/parameters/Platform"
+        - $ref: "#/components/parameters/DeviceName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recovery_handle, code]
+              properties:
+                recovery_handle:
+                  type: string
+                code:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/AuthResult"
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/pair/invites:
+    post:
+      operationId: createPairInvite
+      responses:
+        "201":
+          description: Single-use 48-hour invite.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invite:
+                    $ref: "#/components/schemas/PairInvite"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/pair/accept:
+    post:
+      operationId: acceptPairInvite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "201":
+          description: Pair created.
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/sessions:
+    get:
+      operationId: history
+      parameters:
+        - in: query
+          name: before
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Completed sessions, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FocusSession"
+    post:
+      operationId: startSession
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id]
+              properties:
+                session_id:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          $ref: "#/components/responses/Session"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/sessions/current:
+    get:
+      operationId: currentSession
+      responses:
+        "200":
+          description: Current joinable or member session and server time.
+  /v1/sessions/{sessionID}/{action}:
+    post:
+      operationId: transitionSession
+      parameters:
+        - in: path
+          name: sessionID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: action
+          required: true
+          schema:
+            type: string
+            enum: [join, pause, resume, complete, cancel]
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_version]
+              properties:
+                expected_version:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/Session"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/sync:
+    post:
+      operationId: sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+      responses:
+        "200":
+          description: Applied commands and durable cursor replay.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+        "422":
+          $ref: "#/components/responses/Error"
+  /v1/ws:
+    get:
+      operationId: pairWebSocket
+      description: Authenticated WebSocket that emits durable cursor hints only.
+      responses:
+        "101":
+          description: Switching protocols.
+        "401":
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Challenge:
+      in: header
+      name: X-Along-Challenge
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Installation:
+      in: header
+      name: X-Along-Installation-ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Platform:
+      in: header
+      name: X-Along-Platform
+      required: true
+      schema:
+        type: string
+        enum: [ios, android]
+    DeviceName:
+      in: header
+      name: X-Along-Device-Name
+      required: true
+      schema:
+        type: string
+        maxLength: 120
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Error:
+      description: Explicit JSON error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    CeremonyOptions:
+      description: Server-held challenge reference and WebAuthn publicKey options.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [challenge_id, publicKey]
+            properties:
+              challenge_id:
+                type: string
+                format: uuid
+              publicKey:
+                type: object
+                additionalProperties: true
+    AuthResult:
+      description: Stable account and newly issued token pair.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [tokens, account]
+            properties:
+              tokens:
+                $ref: "#/components/schemas/TokenPair"
+              account:
+                $ref: "#/components/schemas/Account"
+              recovery_kit:
+                $ref: "#/components/schemas/RecoveryKit"
+    Session:
+      description: Authoritative session.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              session:
+                $ref: "#/components/schemas/FocusSession"
+              server_time:
+                type: string
+                format: date-time
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            request_id:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, token_type, expires_at]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          const: Bearer
+        expires_at:
+          type: string
+          format: date-time
+        expires_in:
+          type: integer
+    Account:
+      type: object
+      required: [id, display_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        pair_id:
+          type: [string, "null"]
+          format: uuid
+        partner_name:
+          type: string
+    RecoveryKit:
+      type: object
+      required: [account_id, recovery_handle, codes]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        recovery_handle:
+          type: string
+        codes:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items:
+            type: string
+    PairInvite:
+      type: object
+      required: [id, url, expires_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+    Participant:
+      type: object
+      required: [account_id, display_name, joined_at]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        joined_at:
+          type: string
+          format: date-time
+    FocusSession:
+      type: object
+      required:
+        - id
+        - pair_id
+        - started_by
+        - state
+        - duration_seconds
+        - started_at
+        - ends_at
+        - version
+        - participants
+      properties:
+        id:
+          type: string
+          format: uuid
+        pair_id:
+          type: string
+          format: uuid
+        started_by:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [open, together, paused, completed, cancelled, expired]
+        duration_seconds:
+          const: 1500
+        started_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        paused_at:
+          type: [string, "null"]
+          format: date-time
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+        offline_origin:
+          type: boolean
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Participant"
+    SyncRequest:
+      type: object
+      required: [cursor, commands]
+      properties:
+        cursor:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 500
+        commands:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [id, type]
+            properties:
+              id:
+                type: string
+                format: uuid
+              type:
+                type: string
+              entity_id:
+                type: string
+                format: uuid
+              expected_version:
+                type: integer
+              payload:
+                type: object
+                additionalProperties: true
+    SyncResponse:
+      type: object
+      required: [server_time, cursor, events, has_more, command_results]
+      properties:
+        server_time:
+          type: string
+          format: date-time
+        cursor:
+          type: integer
+        has_more:
+          type: boolean
+        events:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        command_results:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+

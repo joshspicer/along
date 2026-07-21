@@ -1,0 +1,181 @@
+name: along
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: along
+      POSTGRES_USER: along
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U along -d along"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    shm_size: 256mb
+    mem_limit: 1g
+    cpus: 1.5
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
+    build:
+      context: ./server
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-development}
+    entrypoint: ["/app/migrate"]
+    environment:
+      ALONG_ENV: ${ALONG_ENV:-production}
+      DATABASE_URL_FILE: /run/secrets/database_url
+      JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
+      PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.app}
+      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.app}
+    secrets:
+      - database_url
+      - jwt_signing_key
+      - push_encryption_key
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
+    build:
+      context: ./server
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-development}
+    restart: unless-stopped
+    environment:
+      ALONG_ENV: ${ALONG_ENV:-production}
+      HTTP_ADDRESS: :8080
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://along.app}
+      DATABASE_URL_FILE: /run/secrets/database_url
+      JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
+      PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.app}
+      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.app}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-10m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
+      TRUST_PROXY_HEADERS: "true"
+    secrets:
+      - database_url
+      - jwt_signing_key
+      - push_encryption_key
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health/ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    mem_limit: 256m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+
+  apns:
+    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
+    entrypoint: ["/app/apns-worker"]
+    restart: unless-stopped
+    environment:
+      ALONG_ENV: ${ALONG_ENV:-production}
+      DATABASE_URL_FILE: /run/secrets/database_url
+      JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
+      PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.app}
+      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.app}
+      APNS_TEAM_ID: ${APNS_TEAM_ID}
+      APNS_KEY_ID: ${APNS_KEY_ID}
+      APNS_KEY_PATH: /run/secrets/apns_key
+      APNS_TOPIC: com.joshspicer.along
+      APNS_ENVIRONMENT: ${APNS_ENVIRONMENT:-production}
+    secrets:
+      - database_url
+      - jwt_signing_key
+      - push_encryption_key
+      - apns_key
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    mem_limit: 192m
+    cpus: 0.5
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      ALONG_DOMAIN: ${ALONG_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/well-known:/srv/well-known:ro
+      - ./deploy/site:/srv/site:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    read_only: true
+    mem_limit: 128m
+    cpus: 0.5
+    security_opt:
+      - no-new-privileges:true
+
+  backup:
+    profiles: ["operations"]
+    build: ./deploy/backup
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT}
+      BACKUP_RCLONE_REMOTE: ${BACKUP_RCLONE_REMOTE}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    secrets:
+      - database_url
+      - rclone_config
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  postgres_password:
+    file: ${POSTGRES_PASSWORD_FILE:-./secrets/postgres_password}
+  database_url:
+    file: ${DATABASE_URL_FILE:-./secrets/database_url}
+  jwt_signing_key:
+    file: ${JWT_SIGNING_KEY_FILE:-./secrets/jwt_signing_key}
+  push_encryption_key:
+    file: ${PUSH_ENCRYPTION_KEY_FILE:-./secrets/push_encryption_key}
+  apns_key:
+    file: ${APNS_KEY_FILE:-./secrets/AuthKey.p8}
+  rclone_config:
+    file: ${RCLONE_CONFIG_FILE:-./secrets/rclone.conf}

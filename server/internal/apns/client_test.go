@@ -11,13 +11,13 @@ func TestAPNSPayloadIsPrivacySafeAndResyncs(t *testing.T) {
 	payload, err := apnsPayload(json.RawMessage(`{
 		"title":"Along",
 		"body":"Your partner started a focus.",
-		"deep_link":"along://focus"
+		"deep_link":"along:///focus"
 	}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(payload)
-	for _, want := range []string{"Your partner started a focus.", "along://focus", `"resync":true`} {
+	for _, want := range []string{"Your partner started a focus.", "along:///focus", `"resync":true`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("payload %s does not contain %q", text, want)
 		}

@@ -252,7 +252,7 @@ func (s *Store) StartSession(
 	if err := enqueuePartnerNotification(ctx, tx, *identity.PairID, identity.AccountID, cursor, "focus_started", map[string]any{
 		"title":     "Along",
 		"body":      "Your partner started a focus.",
-		"deep_link": "along://focus",
+		"deep_link": "along:///focus",
 	}); err != nil {
 		return domain.FocusSession{}, false, err
 	}
@@ -537,7 +537,7 @@ func (s *Store) AddNote(
 	if err := enqueuePartnerNotification(ctx, tx, *identity.PairID, identity.AccountID, cursor, "partner_note", map[string]any{
 		"title":     "Along",
 		"body":      "Your partner left a note.",
-		"deep_link": "along://look-back",
+		"deep_link": "along:///look-back",
 	}); err != nil {
 		return domain.SessionNote{}, false, err
 	}

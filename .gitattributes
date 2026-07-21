@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.pbxproj text eol=lf
+*.p8 binary
+*.png binary
+*.jpg binary
+

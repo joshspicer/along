@@ -94,7 +94,7 @@ jobs:
 
   ios:
     name: Unsigned iOS simulator
-    runs-on: macos-15
+    runs-on: macos-26
     defaults:
       run:
         working-directory: mobile
@@ -134,7 +134,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: along-server:ci
           format: table
@@ -144,7 +144,7 @@ jobs:
       - name: Build backup utility
         run: docker build -t along-backup:ci deploy/backup
       - name: Scan backup utility
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: along-backup:ci
           format: table

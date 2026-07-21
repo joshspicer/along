@@ -46,7 +46,7 @@ jobs:
           path: mobile/build/app/outputs/bundle/release/app-release.aab
 
   ios:
-    runs-on: macos-15
+    runs-on: macos-26
     defaults:
       run:
         working-directory: mobile
@@ -69,4 +69,3 @@ jobs:
         with:
           name: ios-release-unsigned
           path: mobile/build/ios/archive/Runner.xcarchive
-

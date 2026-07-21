@@ -1,0 +1,141 @@
+package httpapi
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/joshspicer/along/server/internal/auth"
+	"github.com/joshspicer/along/server/internal/config"
+	"github.com/joshspicer/along/server/internal/push"
+	"github.com/joshspicer/along/server/internal/realtime"
+	"github.com/joshspicer/along/server/internal/store"
+)
+
+type API struct {
+	cfg            config.Config
+	store          *store.Store
+	auth           *auth.Service
+	hub            *realtime.Hub
+	pushCipher     *push.Cipher
+	logger         *slog.Logger
+	originPatterns []string
+}
+
+func New(
+	cfg config.Config,
+	data *store.Store,
+	authService *auth.Service,
+	hub *realtime.Hub,
+	pushCipher *push.Cipher,
+	logger *slog.Logger,
+) http.Handler {
+	api := &API{
+		cfg:        cfg,
+		store:      data,
+		auth:       authService,
+		hub:        hub,
+		pushCipher: pushCipher,
+		logger:     logger,
+	}
+	for _, origin := range cfg.WebAuthnRPOrigins {
+		if parsed, err := url.Parse(origin); err == nil {
+			api.originPatterns = append(api.originPatterns, parsed.Host)
+		}
+	}
+	router := chi.NewRouter()
+	router.Use(api.requestIDMiddleware)
+	router.Use(api.recoverMiddleware)
+	router.Use(api.accessLogMiddleware)
+	router.Use(secureHeaders)
+	router.Use(middleware.CleanPath)
+	router.Use(middleware.StripSlashes)
+	router.Use(api.rateLimitMiddleware(newRateLimiter(cfg.RateLimitPerMinute, time.Minute)))
+
+	router.Get("/health/live", api.live)
+	router.Get("/health/ready", api.ready)
+	router.Get("/v1/meta", api.meta)
+
+	router.Route("/v1/auth", func(r chi.Router) {
+		r.Use(api.rateLimitMiddleware(newRateLimiter(30, time.Minute)))
+		r.Post("/register/options", api.registerOptions)
+		r.Post("/register/finish", api.registerFinish)
+		r.Post("/login/options", api.loginOptions)
+		r.Post("/login/finish", api.loginFinish)
+		r.Post("/recover", api.recover)
+		r.Post("/refresh", api.refresh)
+	})
+
+	router.Group(func(r chi.Router) {
+		r.Use(api.authenticate)
+		r.Get("/v1/me", api.me)
+		r.Post("/v1/auth/logout", api.logout)
+		r.Get("/v1/auth/passkeys", api.passkeys)
+		r.Post("/v1/auth/passkeys/options", api.addPasskeyOptions)
+		r.Post("/v1/auth/passkeys/finish", api.addPasskeyFinish)
+		r.Delete("/v1/auth/passkeys/{credentialID}", api.revokePasskey)
+		r.Get("/v1/auth/sessions", api.authSessions)
+		r.Delete("/v1/auth/sessions/{sessionID}", api.revokeAuthSession)
+		r.Get("/v1/auth/installations", api.installations)
+		r.Delete("/v1/auth/installations/{installationID}", api.revokeInstallation)
+		r.Post("/v1/auth/recovery-codes/regenerate", api.regenerateRecoveryCodes)
+
+		r.Get("/v1/pair", api.getPair)
+		r.Post("/v1/pair/invites", api.createPairInvite)
+		r.Post("/v1/pair/accept", api.acceptPairInvite)
+
+		r.Get("/v1/sessions/current", api.currentSession)
+		r.Get("/v1/sessions", api.sessionHistory)
+		r.Post("/v1/sessions", api.startSession)
+		r.Post("/v1/sessions/{sessionID}/join", api.joinSession)
+		r.Post("/v1/sessions/{sessionID}/pause", api.pauseSession)
+		r.Post("/v1/sessions/{sessionID}/resume", api.resumeSession)
+		r.Post("/v1/sessions/{sessionID}/complete", api.completeSession)
+		r.Post("/v1/sessions/{sessionID}/cancel", api.cancelSession)
+		r.Post("/v1/sessions/{sessionID}/notes", api.addNote)
+		r.Post("/v1/sessions/{sessionID}/cheers", api.addCheer)
+
+		r.Put("/v1/push/device", api.registerPushDevice)
+		r.Delete("/v1/push/device", api.revokePushDevice)
+		r.Post("/v1/sync", api.sync)
+		r.Get("/v1/ws", api.webSocket)
+	})
+	return router
+}
+
+func (a *API) live(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+func (a *API) ready(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := contextWithTimeout(r, a.cfg.ReadinessTimeout)
+	defer cancel()
+	if err := a.store.Ping(ctx); err != nil {
+		a.writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ready"})
+}
+
+func (a *API) meta(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"service":     "along-server",
+		"api_version": "v1",
+		"git_commit":  a.cfg.GitCommit,
+		"server_time": time.Now().UTC(),
+	})
+}
+
+func contextWithTimeout(r *http.Request, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(r.Context(), timeout)
+}
+
+func normalizedBaseURL(value string) string {
+	return strings.TrimRight(value, "/")
+}

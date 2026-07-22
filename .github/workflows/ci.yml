@@ -112,11 +112,14 @@ jobs:
           --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
           --dart-define=ALONG_API_BASE_URL=https://along.app
       - name: Archive simulator artifact
-        run: ditto -c -k --sequesterRsrc build/ios/iphonesimulator/Runner.app build/Runner-simulator.zip
+        run: >-
+          ditto -c -k --sequesterRsrc
+          build/ios/iphonesimulator/AlongFocusTogether.app
+          build/AlongFocusTogether-simulator.zip
       - uses: actions/upload-artifact@v4
         with:
           name: ios-simulator
-          path: mobile/build/Runner-simulator.zip
+          path: mobile/build/AlongFocusTogether-simulator.zip
 
   container:
     name: Container, migrations, and security

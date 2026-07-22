@@ -17,5 +17,4 @@ printf 'postgres://along:%s@postgres:5432/along?sslmode=disable' "$password" \
   >"$directory/database_url"
 openssl rand -base64 48 | tr -d '\n' >"$directory/jwt_signing_key"
 openssl rand -base64 32 | tr -d '\n' >"$directory/push_encryption_key"
-printf 'Created local Docker secrets. Add AuthKey.p8 and rclone.conf separately.\n'
-
+printf 'Created local Docker secrets. Add AuthKey.p8 and backup_upload_token separately.\n'

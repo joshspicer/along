@@ -147,11 +147,12 @@ services:
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
       BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT}
-      BACKUP_RCLONE_REMOTE: ${BACKUP_RCLONE_REMOTE}
+      BACKUP_UPLOAD_URL: ${BACKUP_UPLOAD_URL}
+      BACKUP_UPLOAD_TOKEN_FILE: /run/secrets/backup_upload_token
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
     secrets:
       - database_url
-      - rclone_config
+      - backup_upload_token
     volumes:
       - ./backups:/backups
     depends_on:
@@ -177,5 +178,5 @@ secrets:
     file: ${PUSH_ENCRYPTION_KEY_FILE:-./secrets/push_encryption_key}
   apns_key:
     file: ${APNS_KEY_FILE:-./secrets/AuthKey.p8}
-  rclone_config:
-    file: ${RCLONE_CONFIG_FILE:-./secrets/rclone.conf}
+  backup_upload_token:
+    file: ${BACKUP_UPLOAD_TOKEN_FILE:-./secrets/backup_upload_token}

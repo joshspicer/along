@@ -7,10 +7,10 @@
 - PostgreSQL storage on encrypted durable media
 - Apple Team ID, APNs key ID, and an APNs `.p8` with push permission
 - An age recipient whose private identity is held off-host
-- An rclone destination in a separate account or failure domain
+- An HTTPS PUT backup gateway in a separate account or failure domain
 
 Generate local secret files with `./scripts/generate-secrets.sh`. Add
-`secrets/AuthKey.p8` and `secrets/rclone.conf` manually. Never copy an age
+`secrets/AuthKey.p8` and `secrets/backup_upload_token` manually. Never copy an age
 private identity, Apple key, or signing credential into the repository or image.
 Set file mode `0600`.
 
@@ -83,8 +83,8 @@ sudo install -d -m 0700 -o 65532 -g 65532 backups
 docker compose --profile operations run --rm backup
 ```
 
-`pg_dump` output is encrypted with age before it reaches disk or rclone. The
-hook uploads the encrypted object off-host, then applies local retention.
+`pg_dump` output is encrypted with age before upload. The hook sends the
+encrypted object by authenticated HTTPS PUT to `BACKUP_UPLOAD_URL`, then applies local retention.
 Configure remote-side immutability/versioning separately.
 
 Quarterly, download a backup into `backups/`, provision an empty isolated

@@ -26,12 +26,13 @@ final secureStoreProvider = Provider<SecureStore>(
   (ref) => FlutterSecureStore(),
 );
 
-final tokenCoordinatorProvider = Provider<TokenCoordinator>(
-  (ref) => TokenCoordinator(
-    ref.watch(secureStoreProvider),
-    ref.watch(runtimeConfigProvider).requireValue,
-  ),
-);
+final tokenCoordinatorProvider = Provider<TokenCoordinator>((ref) {
+  final config = ref.watch(runtimeConfigProvider).value;
+  if (config == null) {
+    throw StateError('Runtime configuration is still loading.');
+  }
+  return TokenCoordinator(ref.watch(secureStoreProvider), config);
+});
 
 final passkeyServiceProvider = Provider<PasskeyService>(
   (ref) => const NativePasskeyService(),
@@ -51,10 +52,14 @@ final authRepositoryProvider = Provider<AuthRepository>(
 );
 
 final syncEngineProvider = Provider<SyncEngine>((ref) {
+  final config = ref.watch(runtimeConfigProvider).value;
+  if (config == null) {
+    throw StateError('Runtime configuration is still loading.');
+  }
   final engine = SyncEngine(
     ref.watch(databaseProvider),
     ref.watch(tokenCoordinatorProvider),
-    ref.watch(runtimeConfigProvider).requireValue,
+    config,
   );
   unawaited(engine.initialize());
   ref.onDispose(() => unawaited(engine.stopRealtime()));

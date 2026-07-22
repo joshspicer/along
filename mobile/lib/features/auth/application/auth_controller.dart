@@ -14,6 +14,7 @@ class AuthController extends AsyncNotifier<AuthState> {
 
   @override
   Future<AuthState> build() async {
+    await ref.watch(runtimeConfigProvider.future);
     final restored = await _repository.restore();
     if (restored.isSignedIn && restored.account?.pairId != null) {
       ref.read(syncEngineProvider).startRealtime();

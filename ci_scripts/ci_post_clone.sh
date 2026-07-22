@@ -19,9 +19,13 @@ EOF
 cd "$root/mobile"
 flutter pub get
 dart run build_runner build
-flutter build ios --simulator --no-codesign \
+flutter build ios --config-only --no-codesign \
   --dart-define=ALONG_GIT_COMMIT="$commit" \
   --dart-define=ALONG_API_BASE_URL=https://along.spicer.dev
+
+# Xcode Cloud archives for a physical device. A simulator prebuild leaves
+# Generated.xcconfig pointing at simulator-only engine artifacts.
+flutter precache --ios
 
 generated_package="$root/mobile/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
 if [ ! -f "$generated_package" ]; then

@@ -28,6 +28,8 @@ void main() {
     expect(custom.apiBaseUrl, 'https://staging.example.test');
     expect(custom.apnsEnvironment, 'sandbox');
     expect(custom.requestTimeoutSeconds, 45);
+    expect(custom.relyingPartyId, 'staging.example.test');
+    expect(custom.isProductionEndpoint, isFalse);
 
     await container.read(runtimeConfigProvider.notifier).reset();
     final defaults = await container.read(runtimeConfigProvider.future);

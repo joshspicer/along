@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/config/runtime_config.dart';
@@ -93,6 +94,10 @@ class _AdvancedSettingsScreenState
                 suffixText: 'seconds',
               ),
             ),
+            const SizedBox(height: 24),
+            Text('Debug info', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            _DebugInfo(config: config.value),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -161,4 +166,43 @@ class _AdvancedSettingsScreenState
     ref.invalidate(sessionRepositoryProvider);
     ref.invalidate(serverAvailabilityProvider);
   }
+}
+
+class _DebugInfo extends StatelessWidget {
+  const _DebugInfo({required this.config});
+
+  final RuntimeConfig? config;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = config;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _row('Endpoint', value?.apiBaseUrl ?? 'Loading'),
+          _row('Active passkey RP', value?.relyingPartyId ?? 'Loading'),
+          _row(
+            'Available associations',
+            'along.spicer.dev, along-dev.spicer.dev',
+          ),
+          _row('Push', value?.apnsEnvironment ?? 'Loading'),
+          _row('Timeout', '${value?.requestTimeoutSeconds ?? '—'} seconds'),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (_, snapshot) => _row(
+              'Build',
+              '${snapshot.data?.version ?? '—'} (${snapshot.data?.buildNumber ?? '—'}) · ${AppConfig.gitCommit}',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String value) => ListTile(
+    dense: true,
+    title: Text(label),
+    subtitle: SelectableText(value),
+  );
 }

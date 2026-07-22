@@ -14,6 +14,10 @@ class RuntimeConfig {
   final String apnsEnvironment;
   final int requestTimeoutSeconds;
 
+  String get relyingPartyId => Uri.parse(apiBaseUrl).host;
+  bool get isProductionEndpoint =>
+      relyingPartyId == Uri.parse(AppConfig.productionApiBaseUrl).host;
+
   Uri get webSocketUri {
     final httpUri = Uri.parse(apiBaseUrl);
     return httpUri.replace(

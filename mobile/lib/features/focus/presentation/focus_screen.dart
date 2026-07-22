@@ -21,6 +21,7 @@ class FocusScreen extends ConsumerStatefulWidget {
 
 class _FocusScreenState extends ConsumerState<FocusScreen> {
   bool _busy = false;
+  bool _offline = false;
   String? _error;
 
   @override
@@ -40,6 +41,13 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                   values != null &&
                   values.isNotEmpty &&
                   values.every((value) => value == ConnectivityResult.none);
+              if (offline != _offline) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() => _offline = offline);
+                  }
+                });
+              }
               return AnimatedSize(
                 duration: MediaQuery.disableAnimationsOf(context)
                     ? Duration.zero
@@ -65,6 +73,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                   account: account,
                   session: snapshot.data,
                   repository: repository,
+                  offline: _offline,
                   busy: _busy,
                   error: _error,
                   onStart: _start,
@@ -156,6 +165,7 @@ class _FocusContent extends StatelessWidget {
     required this.account,
     required this.session,
     required this.repository,
+    required this.offline,
     required this.busy,
     required this.error,
     required this.onStart,
@@ -165,6 +175,7 @@ class _FocusContent extends StatelessWidget {
   final AuthAccount account;
   final FocusSession? session;
   final SessionRepository repository;
+  final bool offline;
   final bool busy;
   final String? error;
   final VoidCallback onStart;
@@ -184,11 +195,14 @@ class _FocusContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _PartnerStatus(
-                name: partnerName,
-                active: partnerActive,
-                unavailable: current?.offlineOrigin ?? false,
-              ),
+              if (!offline && !account.isOfflineOnly)
+                _PartnerStatus(
+                  name: partnerName,
+                  active: partnerActive,
+                  unavailable: current?.offlineOrigin ?? false,
+                )
+              else
+                const _OfflineStatus(),
               const SizedBox(height: 20),
               Center(
                 child: current == null
@@ -221,7 +235,9 @@ class _FocusContent extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 current == null
-                    ? '$partnerName can join anytime.'
+                    ? offline || account.isOfflineOnly
+                          ? 'Solo focus stays on this device.'
+                          : '$partnerName can join anytime.'
                     : partnerActive
                     ? 'The same clock keeps running.'
                     : current.offlineOrigin
@@ -341,6 +357,24 @@ class _PartnerStatus extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OfflineStatus extends StatelessWidget {
+  const _OfflineStatus();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Offline. Solo focus only.',
+    child: Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        minTileHeight: 64,
+        leading: const Icon(Icons.cloud_off_outlined),
+        title: const Text('Offline'),
+        subtitle: const Text('Solo focus only'),
+      ),
+    ),
+  );
 }
 
 class _OfflineBanner extends StatelessWidget {

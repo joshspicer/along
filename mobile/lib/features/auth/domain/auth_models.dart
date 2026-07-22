@@ -21,6 +21,8 @@ class AuthAccount {
   final String? partnerName;
   final String? installationId;
 
+  bool get isOfflineOnly => id.startsWith('offline-');
+
   AuthAccount copyWith({
     String? pairId,
     String? partnerName,

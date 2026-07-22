@@ -25,6 +25,8 @@
 
 ## Mobile store handoff
 
+- [ ] App Store Connect name is `Along: Focus Together`, product name is
+      `Along Focus Together`, and SKU is `along-focus-together-ios-2026`.
 - [ ] Increment `version`/build number and generate unsigned artifacts with the
       manual workflow or `scripts/release-mobile.sh`.
 - [ ] Owner signs with distribution credentials outside the repository.
@@ -42,4 +44,3 @@
 - [ ] Deploy migration job, then API, worker, and Caddy.
 - [ ] Verify health, synthetic pair start/join/complete, cursor replay, and APNs.
 - [ ] Record image digest and rollback digest in the change ticket.
-

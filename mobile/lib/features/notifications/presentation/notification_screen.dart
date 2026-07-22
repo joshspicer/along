@@ -18,8 +18,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) => OnboardingScaffold(
-    eyebrow: 'Only partner moments',
-    title: 'Know when your partner starts.',
+    eyebrow: 'Notifications',
+    title: 'Know when they start.',
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -35,17 +35,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             trailing: const Text('now'),
           ),
         ),
-        const SizedBox(height: 22),
-        const _Promise(
-          icon: Icons.shield_outlined,
-          title: 'Quiet by design',
-          detail: 'No streak warnings, marketing, or urgent pressure.',
-        ),
-        const _Promise(
-          icon: Icons.tune_rounded,
-          title: 'You stay in control',
-          detail: 'Notifications remain optional and can be changed later.',
-        ),
+        const SizedBox(height: 12),
         if (_error != null) ...[
           const SizedBox(height: 12),
           Text(
@@ -55,7 +45,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
         ],
         const SizedBox(height: 28),
         AsyncButton(
-          label: 'Continue to device settings',
+          label: 'Allow notifications',
           icon: Icons.notifications_active_outlined,
           busy: _busy,
           onPressed: _request,
@@ -92,25 +82,4 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       }
     }
   }
-}
-
-class _Promise extends StatelessWidget {
-  const _Promise({
-    required this.icon,
-    required this.title,
-    required this.detail,
-  });
-
-  final IconData icon;
-  final String title;
-  final String detail;
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    minTileHeight: 64,
-    leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-    title: Text(title),
-    subtitle: Text(detail),
-  );
 }

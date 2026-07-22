@@ -258,10 +258,10 @@ class _SyncStatus extends StatelessWidget {
         Flexible(
           child: Text(
             session.offlineOrigin
-                ? 'Saved here · syncs when you reconnect'
+                ? 'Saved on this device'
                 : session.state == SessionState.together
-                ? 'One server clock for both of you'
-                : 'Your partner can join anytime',
+                ? 'Together'
+                : 'Room open',
             style: context.textTheme.bodySmall,
           ),
         ),

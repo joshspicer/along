@@ -27,15 +27,12 @@ class _RecoveryScreenState extends ConsumerState<RecoveryScreen> {
 
   @override
   Widget build(BuildContext context) => OnboardingScaffold(
-    eyebrow: 'One-time recovery',
-    title: 'Return to your account.',
+    eyebrow: 'Recovery',
+    title: 'Use a recovery code.',
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Enter the recovery handle and one unused code from your printed recovery kit. The code stops working immediately.',
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
         TextField(
           controller: _handle,
           autocorrect: false,

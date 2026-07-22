@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: Private passkey-first pair collaboration and cursor sync.
 servers:
-  - url: https://along.app
+  - url: https://along.spicer.dev
 security:
   - bearerAuth: []
 paths:
@@ -566,4 +566,3 @@ components:
           items:
             type: object
             additionalProperties: true
-

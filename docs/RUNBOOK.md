@@ -3,7 +3,7 @@
 ## Production prerequisites
 
 - A Linux host with Docker Engine 29+ and Compose v2
-- DNS for `along.app` pointed at the Caddy host, with ports 80/443 reachable
+- DNS for `along.spicer.dev` pointed at the Caddy host, with ports 80/443 reachable
 - PostgreSQL storage on encrypted durable media
 - Apple Team ID, APNs key ID, and an APNs `.p8` with push permission
 - An age recipient whose private identity is held off-host
@@ -33,7 +33,7 @@ docker compose pull
 docker compose run --rm migrate
 docker compose up -d postgres api apns caddy
 docker compose ps
-curl --fail https://along.app/health/ready
+curl --fail https://along.spicer.dev/health/ready
 ```
 
 Migrations take a PostgreSQL advisory lock, run transactionally, and are safe to

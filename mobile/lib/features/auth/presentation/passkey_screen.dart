@@ -29,17 +29,17 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
   Widget build(BuildContext context) {
     final busy = ref.watch(authControllerProvider).isLoading;
     return OnboardingScaffold(
-      eyebrow: widget.login ? 'Welcome back' : 'Passkey-first and private',
+      eyebrow: widget.login ? 'Welcome back' : 'Private account',
       title: widget.login
-          ? 'Use your passkey to come back.'
-          : 'Create your private account.',
+          ? 'Sign in with your passkey.'
+          : 'Create your account.',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             widget.login
-                ? 'Your passkey confirms it is you. There is no password to remember.'
-                : 'Along uses the passkey already protected by your device. Your account can move across devices and keeps your pair.',
+                ? 'No password needed.'
+                : 'Your device keeps your passkey safe.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           if (!widget.login) ...[
@@ -73,10 +73,7 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
           ),
         ],
       ),
-      footer: const Text(
-        'Along never receives your device unlock code, Face ID, fingerprint, or passcode.',
-        textAlign: TextAlign.center,
-      ),
+      footer: const Text('Protected by your device.'),
     );
   }
 

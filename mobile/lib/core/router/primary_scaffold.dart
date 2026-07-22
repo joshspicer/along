@@ -15,7 +15,10 @@ class PrimaryScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final index = location.startsWith('/look-back') ? 1 : 0;
     return Scaffold(
-      body: child,
+      body: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: child,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (selected) {

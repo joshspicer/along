@@ -36,15 +36,12 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
 
   @override
   Widget build(BuildContext context) => OnboardingScaffold(
-    eyebrow: 'One private pairing',
-    title: 'Who are you sharing this with?',
+    eyebrow: 'Pair privately',
+    title: 'Share with one person.',
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Send one private link. It works once, expires in 48 hours, and never needs contact access.',
-        ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
         if (_invite == null)
           AsyncButton(
             label: 'Create private pairing link',
@@ -111,14 +108,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
         ],
       ],
     ),
-    footer: const Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.contacts_outlined, size: 18),
-        SizedBox(width: 8),
-        Flexible(child: Text('Along never uploads your contacts.')),
-      ],
-    ),
+    footer: const Text('One link. Expires in 48 hours.'),
   );
 
   Future<void> _create() async {

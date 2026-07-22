@@ -35,8 +35,8 @@ services:
       DATABASE_URL_FILE: /run/secrets/database_url
       JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
       PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
-      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.app}
-      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.app}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.spicer.dev}
+      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.spicer.dev}
     secrets:
       - database_url
       - jwt_signing_key
@@ -59,12 +59,12 @@ services:
     environment:
       ALONG_ENV: ${ALONG_ENV:-production}
       HTTP_ADDRESS: :8080
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://along.app}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://along.spicer.dev}
       DATABASE_URL_FILE: /run/secrets/database_url
       JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
       PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
-      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.app}
-      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.app}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.spicer.dev}
+      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.spicer.dev}
       ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-10m}
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
@@ -96,8 +96,8 @@ services:
       DATABASE_URL_FILE: /run/secrets/database_url
       JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
       PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
-      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.app}
-      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.app}
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.spicer.dev}
+      WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.spicer.dev}
       APNS_TEAM_ID: ${APNS_TEAM_ID}
       APNS_KEY_ID: ${APNS_KEY_ID}
       APNS_KEY_PATH: /run/secrets/apns_key

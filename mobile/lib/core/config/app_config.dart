@@ -3,7 +3,7 @@ import 'generated_commit.dart';
 abstract final class AppConfig {
   static const apiBaseUrl = String.fromEnvironment(
     'ALONG_API_BASE_URL',
-    defaultValue: 'https://along.app',
+    defaultValue: 'https://along.spicer.dev',
   );
   static const apnsEnvironment = String.fromEnvironment(
     'ALONG_APNS_ENVIRONMENT',

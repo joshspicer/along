@@ -72,7 +72,7 @@ class RecoveryKit {
   }
 }
 
-enum AuthStatus { signedOut, signedIn }
+enum AuthStatus { signedOut, signedIn, offlineGuest }
 
 class AuthState {
   const AuthState.signedOut()
@@ -87,12 +87,19 @@ class AuthState {
     this.recoveryKit,
   }) : status = AuthStatus.signedIn;
 
+  const AuthState.offlineGuest({required this.account})
+    : status = AuthStatus.offlineGuest,
+      recoveryKit = null,
+      notificationsExplained = true;
+
   final AuthStatus status;
   final AuthAccount? account;
   final RecoveryKit? recoveryKit;
   final bool notificationsExplained;
 
   bool get isSignedIn => status == AuthStatus.signedIn && account != null;
+  bool get canUseApp => account != null;
+  bool get isOfflineGuest => status == AuthStatus.offlineGuest;
 
   AuthState copyWith({
     AuthAccount? account,

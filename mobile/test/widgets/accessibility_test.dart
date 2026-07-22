@@ -1,7 +1,9 @@
+import 'package:along/core/network/server_availability.dart';
 import 'package:along/core/router/primary_scaffold.dart';
 import 'package:along/core/theme/along_theme.dart';
 import 'package:along/features/auth/presentation/welcome_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,15 +20,22 @@ void main() {
         ],
       );
       await tester.pumpWidget(
-        MaterialApp.router(
-          theme: AlongTheme.light(),
-          routerConfig: router,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: const TextScaler.linear(2),
-              disableAnimations: true,
+        ProviderScope(
+          overrides: [
+            serverAvailabilityProvider.overrideWith(
+              _AvailableServerController.new,
             ),
-            child: child!,
+          ],
+          child: MaterialApp.router(
+            theme: AlongTheme.light(),
+            routerConfig: router,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(2),
+                disableAnimations: true,
+              ),
+              child: child!,
+            ),
           ),
         ),
       );
@@ -63,4 +72,9 @@ void main() {
     expect(find.text('Focus'), findsOneWidget);
     expect(find.text('Look back'), findsOneWidget);
   });
+}
+
+class _AvailableServerController extends ServerAvailabilityController {
+  @override
+  Future<ServerAvailability> build() async => ServerAvailability.available;
 }

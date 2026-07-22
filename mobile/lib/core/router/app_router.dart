@@ -93,11 +93,23 @@ String? _redirect(Ref ref, GoRouterState route) {
   final invite =
       route.uri.queryParameters['invite'] ??
       (path.startsWith('/join/') ? route.pathParameters['token'] : null);
-  if (!auth.isSignedIn) {
+  if (!auth.canUseApp) {
     final publicPath =
         path == '/welcome' || path == '/passkey' || path == '/recover';
     if (path.startsWith('/join/') && invite != null) {
       return '/welcome?invite=$invite';
+    }
+    if (auth.isOfflineGuest) {
+      if (path == '/splash' ||
+          path == '/welcome' ||
+          path == '/passkey' ||
+          path == '/recover' ||
+          path == '/pair' ||
+          path.startsWith('/join/') ||
+          path == '/notifications') {
+        return '/focus';
+      }
+      return null;
     }
     return publicPath ? null : '/welcome';
   }

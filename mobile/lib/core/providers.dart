@@ -8,6 +8,7 @@ import '../features/auth/domain/auth_models.dart';
 import '../features/focus/data/session_repository.dart';
 import '../features/pairing/data/pair_repository.dart';
 import 'database/app_database.dart';
+import 'network/server_availability.dart';
 import 'network/token_coordinator.dart';
 import 'platform/notification_service.dart';
 import 'platform/passkey_service.dart';
@@ -55,12 +56,14 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   return engine;
 });
 
-final sessionRepositoryProvider = Provider<SessionRepository>(
-  (ref) => SessionRepository(
+final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
+  final server = ref.watch(serverAvailabilityProvider).value;
+  return SessionRepository(
     ref.watch(databaseProvider),
     ref.watch(syncEngineProvider),
-  ),
-);
+    forceOffline: server == ServerAvailability.unavailable,
+  );
+});
 
 final pairRepositoryProvider = Provider<PairRepository>(
   (ref) => PairRepository(

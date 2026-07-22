@@ -29,6 +29,22 @@ class AuthRepository {
     return _stateFromPayload(payload);
   }
 
+  Future<AuthState> startOffline() async {
+    final saved = await database.profile();
+    if (saved != null) {
+      return AuthState.offlineGuest(account: saved.$1);
+    }
+    final installationId = await secureStore.installationId();
+    final account = AuthAccount(
+      id: 'offline-$installationId',
+      displayName: 'You',
+      pairId: 'offline-$installationId',
+      installationId: installationId,
+    );
+    await database.saveProfile(account, notificationsExplained: true);
+    return AuthState.offlineGuest(account: account);
+  }
+
   Future<AuthState> register(String displayName) async {
     final optionsResponse = await tokens.publicClient
         .post<Map<String, Object?>>(

@@ -1,58 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/server_availability.dart';
+import '../../../core/providers.dart';
 import '../../../core/widgets/along_mark.dart';
 import '../../../core/widgets/async_button.dart';
 import 'onboarding_scaffold.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key, this.invite});
 
   final String? invite;
 
   @override
-  Widget build(BuildContext context) => OnboardingScaffold(
-    eyebrow: 'A shared place to show up',
-    title: 'Make a little room that belongs to both of you.',
-    body: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Focus on your own, meet in the same moment, and remember the time you found each other there.',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final availability = ref.watch(serverAvailabilityProvider).value;
+    final serverUnavailable = availability == ServerAvailability.unavailable;
+    return OnboardingScaffold(
+      eyebrow: 'A shared place to show up',
+      title: 'Make a little room that belongs to both of you.',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Focus on your own, meet in the same moment, and remember the time you found each other there.',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        const SizedBox(height: 38),
-        Semantics(
-          label: 'Two people connected privately',
-          child: const _PairIllustration(),
-        ),
-        const SizedBox(height: 38),
-        AsyncButton(
-          label: 'Create our space',
-          icon: Icons.arrow_forward_rounded,
-          onPressed: () => context.go(_passkeyLocation('create')),
-        ),
-        const SizedBox(height: 10),
-        AsyncButton(
-          label: 'Sign in with a passkey',
-          outlined: true,
-          icon: Icons.key_rounded,
-          onPressed: () => context.go(_passkeyLocation('login')),
-        ),
-        TextButton(
-          onPressed: () => context.go('/recover'),
-          child: const Text('Use a recovery code'),
-        ),
-      ],
-    ),
-    footer: Text(
-      'Private by default. Just the two of you.',
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodySmall,
-    ),
-  );
+          const SizedBox(height: 38),
+          Semantics(
+            label: 'Two people connected privately',
+            child: const _PairIllustration(),
+          ),
+          const SizedBox(height: 38),
+          if (serverUnavailable) ...[
+            Text(
+              'Along’s shared service is unavailable. You can still focus and keep a private history on this device.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            AsyncButton(
+              label: 'Continue offline',
+              icon: Icons.offline_bolt_rounded,
+              onPressed: () async {
+                await ref
+                    .read(authControllerProvider.notifier)
+                    .continueOffline();
+              },
+            ),
+          ] else ...[
+            AsyncButton(
+              label: 'Create our space',
+              icon: Icons.arrow_forward_rounded,
+              onPressed: () => context.go(_passkeyLocation('create')),
+            ),
+            const SizedBox(height: 10),
+            AsyncButton(
+              label: 'Sign in with a passkey',
+              outlined: true,
+              icon: Icons.key_rounded,
+              onPressed: () => context.go(_passkeyLocation('login')),
+            ),
+            TextButton(
+              onPressed: () => context.go('/recover'),
+              child: const Text('Use a recovery code'),
+            ),
+          ],
+        ],
+      ),
+      footer: Text(
+        'Private by default. Just the two of you.',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
+  }
 
   String _passkeyLocation(String mode) {
     final query = <String, String>{'mode': mode};

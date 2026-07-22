@@ -34,6 +34,11 @@ class AuthController extends AsyncNotifier<AuthState> {
     () => _repository.recover(recoveryHandle: recoveryHandle, code: code),
   );
 
+  Future<void> continueOffline() async {
+    state = const AsyncLoading();
+    state = AsyncData(await _repository.startOffline());
+  }
+
   Future<void> logout() async {
     state = const AsyncLoading();
     await ref.read(syncEngineProvider).stopRealtime();

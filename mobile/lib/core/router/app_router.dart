@@ -15,6 +15,7 @@ import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/pairing/presentation/pairing_screen.dart';
 import '../../features/settings/presentation/advanced_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../config/runtime_config.dart';
 import '../providers.dart';
 import 'primary_scaffold.dart';
 
@@ -180,6 +181,7 @@ String? _redirect(Ref ref, GoRouterState route) {
 class _AuthRouterRefresh extends ChangeNotifier {
   _AuthRouterRefresh(Ref ref) {
     ref.listen(authControllerProvider, (_, _) => notifyListeners());
+    ref.listen(runtimeConfigProvider, (_, _) => notifyListeners());
   }
 }
 

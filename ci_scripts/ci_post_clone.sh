@@ -19,7 +19,12 @@ EOF
 cd "$root/mobile"
 flutter pub get
 dart run build_runner build
-flutter build ios --config-only --no-codesign \
+flutter build ios --simulator --no-codesign \
   --dart-define=ALONG_GIT_COMMIT="$commit" \
   --dart-define=ALONG_API_BASE_URL=https://along.app
 
+generated_package="$root/mobile/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
+if [ ! -f "$generated_package" ]; then
+  printf 'Flutter did not generate the iOS plugin Swift package at %s\n' "$generated_package" >&2
+  exit 1
+fi

@@ -1,0 +1,71 @@
+name: Prepare mobile release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: Monotonically increasing store build number
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-mobile
+  cancel-in-progress: false
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.6
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - name: Build unsigned App Bundle
+        run: >-
+          flutter build appbundle --release
+          --build-number=${{ inputs.build_number }}
+          --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
+          --dart-define=ALONG_API_BASE_URL=https://along.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-unsigned
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+
+  ios:
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.6
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - name: Build unsigned archive
+        run: >-
+          flutter build ipa --release --no-codesign
+          --build-number=${{ inputs.build_number }}
+          --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
+          --dart-define=ALONG_API_BASE_URL=https://along.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-unsigned
+          path: mobile/build/ios/archive/Runner.xcarchive

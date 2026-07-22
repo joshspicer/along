@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["REPLACE_WITH_TEAM_ID.com.joshspicer.along"],
+        "components": [
+          { "/": "/join/*", "comment": "One-time pairing links" },
+          { "/": "/focus", "comment": "Focus notification resync" },
+          { "/": "/look-back", "comment": "Note notification resync" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["REPLACE_WITH_TEAM_ID.com.joshspicer.along"]
+  }
+}
+

@@ -1,0 +1,11 @@
+Along is a private place for two people to make a little focused time.
+
+Start a 25-minute focus in one tap. Your paired person can see the room already
+in progress and join the same clock without an invitation or waiting screen.
+Finish on your own or together, leave an optional small note, and find completed
+sessions newest-first in Look back.
+
+Along has no feeds, scores, streaks, schedules, public profiles, or relationship
+ratings. Notifications are optional and limited to useful partner moments.
+Passkeys protect your self-hosted account without a password.
+

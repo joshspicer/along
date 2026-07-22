@@ -19,13 +19,15 @@ import (
 )
 
 type API struct {
-	cfg            config.Config
-	store          *store.Store
-	auth           *auth.Service
-	hub            *realtime.Hub
-	pushCipher     *push.Cipher
-	logger         *slog.Logger
-	originPatterns []string
+	cfg                     config.Config
+	store                   *store.Store
+	auth                    *auth.Service
+	hub                     *realtime.Hub
+	pushCipher              *push.Cipher
+	logger                  *slog.Logger
+	originPatterns          []string
+	socketHeartbeatInterval time.Duration
+	socketPingTimeout       time.Duration
 }
 
 func New(
@@ -37,12 +39,14 @@ func New(
 	logger *slog.Logger,
 ) http.Handler {
 	api := &API{
-		cfg:        cfg,
-		store:      data,
-		auth:       authService,
-		hub:        hub,
-		pushCipher: pushCipher,
-		logger:     logger,
+		cfg:                     cfg,
+		store:                   data,
+		auth:                    authService,
+		hub:                     hub,
+		pushCipher:              pushCipher,
+		logger:                  logger,
+		socketHeartbeatInterval: 25 * time.Second,
+		socketPingTimeout:       10 * time.Second,
 	}
 	for _, origin := range cfg.WebAuthnRPOrigins {
 		if parsed, err := url.Parse(origin); err == nil {

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -213,30 +214,32 @@ func (a *API) webSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer connection.Close(websocket.StatusNormalClosure, "connection closed")
+	socketContext := connection.CloseRead(r.Context())
+	socketRequest := r.WithContext(socketContext)
 
 	hints, unsubscribe := a.hub.Subscribe(*current.PairID)
 	defer unsubscribe()
-	if err := writeSocketJSON(r, connection, map[string]any{
+	if err := writeSocketJSON(socketRequest, connection, map[string]any{
 		"type":        "connected",
 		"server_time": time.Now().UTC(),
 	}); err != nil {
 		return
 	}
-	ticker := time.NewTicker(25 * time.Second)
+	ticker := time.NewTicker(a.socketHeartbeatInterval)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-r.Context().Done():
+		case <-socketContext.Done():
 			return
 		case hint := <-hints:
-			if err := writeSocketJSON(r, connection, map[string]any{
+			if err := writeSocketJSON(socketRequest, connection, map[string]any{
 				"type":   "cursor",
 				"cursor": hint.Cursor,
 			}); err != nil {
 				return
 			}
 		case <-ticker.C:
-			ctx, cancel := contextWithTimeout(r, 10*time.Second)
+			ctx, cancel := context.WithTimeout(socketContext, a.socketPingTimeout)
 			err := connection.Ping(ctx)
 			cancel()
 			if err != nil {

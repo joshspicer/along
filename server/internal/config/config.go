@@ -107,6 +107,7 @@ func (c Config) ValidateAPI() error {
 		u, err := url.Parse(origin)
 		if err != nil || u.Scheme == "" || u.Host == "" {
 			errs = append(errs, fmt.Errorf("invalid WebAuthn origin %q", origin))
+			continue
 		}
 		if c.Environment == "production" && u.Scheme != "https" {
 			errs = append(errs, fmt.Errorf("production WebAuthn origin %q must use HTTPS", origin))

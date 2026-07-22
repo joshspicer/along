@@ -18,7 +18,7 @@ class AlongApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'Along',
+      title: 'Along Focus Together',
       debugShowCheckedModeBanner: false,
       theme: AlongTheme.light(),
       darkTheme: AlongTheme.dark(),

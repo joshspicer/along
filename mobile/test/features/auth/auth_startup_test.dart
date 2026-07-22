@@ -1,3 +1,4 @@
+import 'package:along/core/config/app_config.dart';
 import 'package:along/core/config/runtime_config.dart';
 import 'package:along/core/providers.dart';
 import 'package:along/core/secure/secure_store.dart';
@@ -22,7 +23,7 @@ void main() {
       expect(auth.isSignedIn, isFalse);
       expect(
         (await container.read(runtimeConfigProvider.future)).apiBaseUrl,
-        'https://along.spicer.dev',
+        AppConfig.defaultApiBaseUrl,
       );
     },
   );

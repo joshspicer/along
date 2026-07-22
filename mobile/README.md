@@ -15,7 +15,7 @@ Run against a local API:
 
 ```sh
 fvm flutter run \
-  --dart-define=ALONG_API_BASE_URL=https://localhost \
+  --dart-define=ALONG_API_BASE_URL=http://localhost:8080 \
   --dart-define=ALONG_APNS_ENVIRONMENT=sandbox \
   --dart-define=ALONG_GIT_COMMIT="$(git rev-parse --short HEAD)"
 ```
@@ -27,4 +27,3 @@ bridges perform passkey ceremonies; private key material never enters Dart.
 
 Generated `*.g.dart` and `*.freezed.dart` files are committed so release builds
 do not depend on code generation.
-

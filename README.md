@@ -24,8 +24,8 @@ local secrets:
 docker compose up --build postgres migrate api caddy
 ```
 
-The API is available through Caddy at `https://localhost` (development
-certificate). See
+The API is available directly at `http://localhost:8080` for simulator/debug
+builds and through Caddy at `https://localhost`. See
 [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for setup and operations.
 
 Native passkeys require an owned HTTPS relying-party domain. See

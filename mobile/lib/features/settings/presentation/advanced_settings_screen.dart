@@ -62,7 +62,7 @@ class _AdvancedSettingsScreenState
               controller: _endpoint,
               keyboardType: TextInputType.url,
               autocorrect: false,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Server endpoint',
                 hintText: AppConfig.defaultApiBaseUrl,
               ),

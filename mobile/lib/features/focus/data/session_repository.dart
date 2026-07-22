@@ -8,12 +8,17 @@ import '../../auth/domain/auth_models.dart';
 import '../domain/focus_session.dart';
 
 class SessionRepository {
-  SessionRepository(this._database, this._sync, {Uuid? uuid})
-    : _uuid = uuid ?? const Uuid();
+  SessionRepository(
+    this._database,
+    this._sync, {
+    Uuid? uuid,
+    this.forceOffline = false,
+  }) : _uuid = uuid ?? const Uuid();
 
   final AppDatabase _database;
   final SyncEngine _sync;
   final Uuid _uuid;
+  final bool forceOffline;
 
   Stream<FocusSession?> watchCurrent() => _database.watchCurrentSession();
   Stream<List<FocusSession>> watchHistory() => _database.watchHistory();
@@ -45,9 +50,14 @@ class SessionRepository {
       entityId: session.id,
       createdAt: now,
     );
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity.isNotEmpty &&
-        connectivity.every((result) => result == ConnectivityResult.none)) {
+    final connectivity = forceOffline
+        ? const [ConnectivityResult.none]
+        : await Connectivity().checkConnectivity();
+    if (forceOffline ||
+        (connectivity.isNotEmpty &&
+            connectivity.every(
+              (result) => result == ConnectivityResult.none,
+            ))) {
       final offline = session.copyWith(offlineOrigin: true);
       await _database.upsertSession(offline);
       return offline;

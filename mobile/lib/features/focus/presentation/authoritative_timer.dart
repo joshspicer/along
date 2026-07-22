@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/platform/haptics.dart';
 import '../../../core/widgets/along_mark.dart';
 import '../domain/focus_session.dart';
 
@@ -115,6 +116,7 @@ class _AuthoritativeTimerState extends State<AuthoritativeTimer> {
         widget.session.remainingAt(widget.authoritativeNow()) ==
             Duration.zero) {
       _reportedElapsed = true;
+      unawaited(AlongHaptics.success());
       widget.onElapsed?.call();
     }
   }

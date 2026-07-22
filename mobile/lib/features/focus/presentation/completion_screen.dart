@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/platform/haptics.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/along_mark.dart';
 import '../../../core/widgets/async_button.dart';
@@ -150,6 +153,7 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen> {
     try {
       await ref.read(sessionRepositoryProvider).addNote(session, _note.text);
       if (mounted) {
+        unawaited(AlongHaptics.success());
         _note.clear();
         ScaffoldMessenger.of(
           context,

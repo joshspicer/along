@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../platform/haptics.dart';
+
 class PrimaryScaffold extends StatelessWidget {
   const PrimaryScaffold({
     required this.location,
@@ -22,6 +24,10 @@ class PrimaryScaffold extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (selected) {
+          if (selected == index) {
+            return;
+          }
+          AlongHaptics.selection();
           context.go(selected == 0 ? '/focus' : '/look-back');
         },
         destinations: const [

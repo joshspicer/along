@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/platform/haptics.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/along_mark.dart';
 import '../../auth/data/auth_repository.dart';
@@ -104,6 +107,7 @@ class _LiveFocusScreenState extends ConsumerState<LiveFocusScreen> {
   Future<void> _cheer(FocusSession session) => _run(() async {
     await ref.read(sessionRepositoryProvider).cheer(session);
     if (mounted) {
+      unawaited(AlongHaptics.success());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('A quiet cheer reached your partner.')),
       );
@@ -113,6 +117,7 @@ class _LiveFocusScreenState extends ConsumerState<LiveFocusScreen> {
   Future<void> _finish(FocusSession session) => _run(() async {
     await ref.read(sessionRepositoryProvider).complete(session);
     if (mounted) {
+      unawaited(AlongHaptics.success());
       context.go('/complete/${session.id}');
     }
   });
@@ -337,9 +342,15 @@ class _Action extends StatelessWidget {
         children: [Icon(icon), const SizedBox(height: 5), Text(label)],
       ),
     );
+    final action = onPressed == null
+        ? null
+        : () {
+            AlongHaptics.action();
+            onPressed!.call();
+          };
     return emphasized
-        ? FilledButton(onPressed: onPressed, child: child)
-        : OutlinedButton(onPressed: onPressed, child: child);
+        ? FilledButton(onPressed: action, child: child)
+        : OutlinedButton(onPressed: action, child: child);
   }
 }
 

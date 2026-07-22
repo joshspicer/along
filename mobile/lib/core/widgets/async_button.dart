@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../platform/haptics.dart';
+
 class AsyncButton extends StatelessWidget {
   const AsyncButton({
     required this.label,
@@ -18,6 +20,12 @@ class AsyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final action = busy || onPressed == null
+        ? null
+        : () {
+            AlongHaptics.action();
+            onPressed!.call();
+          };
     final child = busy
         ? const SizedBox.square(
             dimension: 22,
@@ -34,8 +42,8 @@ class AsyncButton extends StatelessWidget {
             ],
           );
     if (outlined) {
-      return OutlinedButton(onPressed: busy ? null : onPressed, child: child);
+      return OutlinedButton(onPressed: action, child: child);
     }
-    return FilledButton(onPressed: busy ? null : onPressed, child: child);
+    return FilledButton(onPressed: action, child: child);
   }
 }

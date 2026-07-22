@@ -200,10 +200,8 @@ class _FocusContent extends StatelessWidget {
                   name: partnerName,
                   active: partnerActive,
                   unavailable: current?.offlineOrigin ?? false,
-                )
-              else
-                const _OfflineStatus(),
-              const SizedBox(height: 20),
+                ),
+              SizedBox(height: offline || account.isOfflineOnly ? 4 : 20),
               Center(
                 child: current == null
                     ? _ReadyTimer(repository: repository)
@@ -357,24 +355,6 @@ class _PartnerStatus extends StatelessWidget {
       ),
     );
   }
-}
-
-class _OfflineStatus extends StatelessWidget {
-  const _OfflineStatus();
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: 'Offline. Solo focus only.',
-    child: Card(
-      margin: EdgeInsets.zero,
-      child: ListTile(
-        minTileHeight: 64,
-        leading: const Icon(Icons.cloud_off_outlined),
-        title: const Text('Offline'),
-        subtitle: const Text('Solo focus only'),
-      ),
-    ),
-  );
 }
 
 class _OfflineBanner extends StatelessWidget {

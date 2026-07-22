@@ -3,13 +3,13 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
-import '../config/app_config.dart';
+import '../config/runtime_config.dart';
 import '../secure/secure_store.dart';
 
 class TokenCoordinator {
-  TokenCoordinator(this._secureStore)
-    : _raw = Dio(_baseOptions()),
-      client = Dio(_baseOptions()) {
+  TokenCoordinator(this._secureStore, RuntimeConfig config)
+    : _raw = Dio(_baseOptions(config)),
+      client = Dio(_baseOptions(config)) {
     client.interceptors.add(
       QueuedInterceptorsWrapper(
         onRequest: _authorize,
@@ -124,11 +124,11 @@ class TokenCoordinator {
     }
   }
 
-  static BaseOptions _baseOptions() => BaseOptions(
-    baseUrl: AppConfig.apiBaseUrl,
+  static BaseOptions _baseOptions(RuntimeConfig config) => BaseOptions(
+    baseUrl: config.apiBaseUrl,
     connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 20),
-    sendTimeout: const Duration(seconds: 20),
+    receiveTimeout: Duration(seconds: config.requestTimeoutSeconds),
+    sendTimeout: Duration(seconds: config.requestTimeoutSeconds),
     headers: const <String, Object?>{
       HttpHeaders.acceptHeader: 'application/json',
       HttpHeaders.contentTypeHeader: 'application/json',

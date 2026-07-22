@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:web_socket_channel/io.dart';
 
 import '../../features/focus/domain/focus_session.dart';
-import '../config/app_config.dart';
+import '../config/runtime_config.dart';
 import '../database/app_database.dart';
 import '../network/token_coordinator.dart';
 
@@ -20,10 +20,11 @@ class SyncCommandException implements Exception {
 }
 
 class SyncEngine {
-  SyncEngine(this._database, this._tokens);
+  SyncEngine(this._database, this._tokens, this._config);
 
   final AppDatabase _database;
   final TokenCoordinator _tokens;
+  final RuntimeConfig _config;
   Future<void>? _activeSync;
   Duration _serverOffset = Duration.zero;
   bool _running = false;
@@ -186,7 +187,7 @@ class SyncEngine {
       }
       try {
         final channel = IOWebSocketChannel.connect(
-          AppConfig.webSocketUri,
+          _config.webSocketUri,
           headers: <String, Object?>{'Authorization': 'Bearer $token'},
           pingInterval: const Duration(seconds: 25),
         );

@@ -1,16 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_config.dart';
+import '../config/runtime_config.dart';
 
 enum ServerAvailability { checking, available, unavailable }
 
 class ServerAvailabilityController extends AsyncNotifier<ServerAvailability> {
   @override
   Future<ServerAvailability> build() async {
+    final config = ref.watch(runtimeConfigProvider).requireValue;
     final client = Dio(
       BaseOptions(
-        baseUrl: AppConfig.apiBaseUrl,
+        baseUrl: config.apiBaseUrl,
         connectTimeout: const Duration(seconds: 3),
         receiveTimeout: const Duration(seconds: 3),
         sendTimeout: const Duration(seconds: 3),

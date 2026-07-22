@@ -13,6 +13,7 @@ import '../../features/focus/presentation/live_focus_screen.dart';
 import '../../features/history/presentation/look_back_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/pairing/presentation/pairing_screen.dart';
+import '../../features/settings/presentation/advanced_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../providers.dart';
 import 'primary_scaffold.dart';
@@ -90,6 +91,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         pageBuilder: (_, _) => _page(const SettingsScreen()),
+      ),
+      GoRoute(
+        path: '/settings/advanced',
+        pageBuilder: (_, _) => _page(const AdvancedSettingsScreen()),
       ),
     ],
     errorBuilder: (_, _) => const _NotFoundScreen(),

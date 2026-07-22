@@ -7,6 +7,7 @@ import '../features/auth/data/auth_repository.dart';
 import '../features/auth/domain/auth_models.dart';
 import '../features/focus/data/session_repository.dart';
 import '../features/pairing/data/pair_repository.dart';
+import 'config/runtime_config.dart';
 import 'database/app_database.dart';
 import 'network/server_availability.dart';
 import 'network/token_coordinator.dart';
@@ -26,7 +27,10 @@ final secureStoreProvider = Provider<SecureStore>(
 );
 
 final tokenCoordinatorProvider = Provider<TokenCoordinator>(
-  (ref) => TokenCoordinator(ref.watch(secureStoreProvider)),
+  (ref) => TokenCoordinator(
+    ref.watch(secureStoreProvider),
+    ref.watch(runtimeConfigProvider).requireValue,
+  ),
 );
 
 final passkeyServiceProvider = Provider<PasskeyService>(
@@ -50,6 +54,7 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   final engine = SyncEngine(
     ref.watch(databaseProvider),
     ref.watch(tokenCoordinatorProvider),
+    ref.watch(runtimeConfigProvider).requireValue,
   );
   unawaited(engine.initialize());
   ref.onDispose(() => unawaited(engine.stopRealtime()));

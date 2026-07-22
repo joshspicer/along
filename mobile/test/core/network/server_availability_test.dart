@@ -1,3 +1,4 @@
+import 'package:along/core/config/runtime_config.dart';
 import 'package:along/core/database/app_database.dart';
 import 'package:along/core/network/server_availability.dart';
 import 'package:along/core/network/token_coordinator.dart';
@@ -14,7 +15,16 @@ void main() {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
     final secureStore = MemorySecureStore();
-    final sync = SyncEngine(database, TokenCoordinator(secureStore));
+    const config = RuntimeConfig(
+      apiBaseUrl: 'https://along.spicer.dev',
+      apnsEnvironment: 'production',
+      requestTimeoutSeconds: 20,
+    );
+    final sync = SyncEngine(
+      database,
+      TokenCoordinator(secureStore, config),
+      config,
+    );
     final repository = SessionRepository(database, sync, forceOffline: true);
     const account = AuthAccount(
       id: 'offline-account',

@@ -182,6 +182,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => ref.read(authControllerProvider.notifier).logout(),
               ),
               const Divider(height: 32),
+              ListTile(
+                minTileHeight: 56,
+                leading: const Icon(Icons.tune_rounded),
+                title: const Text('Advanced'),
+                onTap: () => context.push('/settings/advanced'),
+              ),
               FutureBuilder<PackageInfo>(
                 future: PackageInfo.fromPlatform(),
                 builder: (context, snapshot) => ListTile(

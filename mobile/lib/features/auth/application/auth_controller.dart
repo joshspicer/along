@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/config/app_config.dart';
+import '../../../core/config/runtime_config.dart';
 import '../../../core/providers.dart';
 import '../../pairing/data/pair_repository.dart';
 import '../data/auth_repository.dart';
@@ -77,7 +77,10 @@ class AuthController extends AsyncNotifier<AuthState> {
             '/v1/push/device',
             data: <String, Object?>{
               'token': result.apnsToken,
-              'environment': AppConfig.apnsEnvironment,
+              'environment': ref
+                  .read(runtimeConfigProvider)
+                  .requireValue
+                  .apnsEnvironment,
             },
           );
     }

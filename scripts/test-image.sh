@@ -35,7 +35,7 @@ docker run --rm -d \
   postgres:18-alpine >/dev/null
 
 attempt=0
-until docker exec "$database" pg_isready -U postgres -d along_test >/dev/null 2>&1; do
+until docker exec "$database" psql -U postgres -d along_test -c 'SELECT 1' >/dev/null 2>&1; do
   attempt=$((attempt + 1))
   [ "$attempt" -lt 30 ] || exit 1
   sleep 1

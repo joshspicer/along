@@ -30,7 +30,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="along.app"
+                    android:host="along.spicer.dev"
                     android:pathPrefix="/join/" />
             </intent-filter>
             <intent-filter>

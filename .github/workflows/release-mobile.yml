@@ -39,7 +39,7 @@ jobs:
           flutter build appbundle --release
           --build-number=${{ inputs.build_number }}
           --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
-          --dart-define=ALONG_API_BASE_URL=https://along.app
+          --dart-define=ALONG_API_BASE_URL=https://along.spicer.dev
       - uses: actions/upload-artifact@v4
         with:
           name: android-release-unsigned
@@ -64,7 +64,7 @@ jobs:
           flutter build ipa --release --no-codesign
           --build-number=${{ inputs.build_number }}
           --dart-define=ALONG_GIT_COMMIT=${{ github.sha }}
-          --dart-define=ALONG_API_BASE_URL=https://along.app
+          --dart-define=ALONG_API_BASE_URL=https://along.spicer.dev
       - uses: actions/upload-artifact@v4
         with:
           name: ios-release-unsigned

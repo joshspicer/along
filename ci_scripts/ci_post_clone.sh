@@ -21,7 +21,7 @@ flutter pub get
 dart run build_runner build
 flutter build ios --simulator --no-codesign \
   --dart-define=ALONG_GIT_COMMIT="$commit" \
-  --dart-define=ALONG_API_BASE_URL=https://along.app
+  --dart-define=ALONG_API_BASE_URL=https://along.spicer.dev
 
 generated_package="$root/mobile/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
 if [ ! -f "$generated_package" ]; then

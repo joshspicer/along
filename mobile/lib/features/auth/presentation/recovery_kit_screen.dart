@@ -20,15 +20,12 @@ class _RecoveryKitScreenState extends ConsumerState<RecoveryKitScreen> {
   Widget build(BuildContext context) {
     final kit = ref.watch(authControllerProvider).requireValue.recoveryKit!;
     return OnboardingScaffold(
-      eyebrow: 'Keep this somewhere private',
-      title: 'Save your recovery kit once.',
+      eyebrow: 'Recovery kit',
+      title: 'Save these codes.',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'These codes are shown once and each works once. Print or save them somewhere separate from this device.',
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(18),

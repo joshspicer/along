@@ -66,16 +66,6 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen> {
                       textAlign: TextAlign.center,
                       style: context.textTheme.headlineLarge,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      together
-                          ? 'You made a little room for the same thing at the same time.'
-                          : 'You showed up without turning it into another obligation.',
-                      textAlign: TextAlign.center,
-                      style: context.textTheme.bodyLarge?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                     const SizedBox(height: 18),
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,

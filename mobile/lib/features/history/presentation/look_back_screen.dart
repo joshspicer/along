@@ -52,13 +52,6 @@ class LookBackScreen extends ConsumerWidget {
                     'The time you made.',
                     style: context.textTheme.headlineLarge,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Finished sessions are saved here, newest first and never scored.',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -88,8 +81,7 @@ class LookBackScreen extends ConsumerWidget {
                   child: _HistoryMessage(
                     icon: Icons.history_rounded,
                     title: 'Nothing here yet.',
-                    detail:
-                        'Finish a focus and it will appear here without a score or streak.',
+                    detail: 'Finished sessions appear here.',
                   ),
                 );
               }

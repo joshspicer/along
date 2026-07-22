@@ -6,9 +6,8 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:along.app</string>
-		<string>webcredentials:along.app</string>
+		<string>applinks:along.spicer.dev</string>
+		<string>webcredentials:along.spicer.dev</string>
 	</array>
 </dict>
 </plist>
-

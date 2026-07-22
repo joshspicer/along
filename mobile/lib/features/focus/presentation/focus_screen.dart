@@ -221,12 +221,12 @@ class _FocusContent extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 current == null
-                    ? 'Your room opens quietly. $partnerName can join while you focus.'
+                    ? '$partnerName can join anytime.'
                     : partnerActive
-                    ? 'The same clock keeps running. Nothing is waiting on you.'
+                    ? 'The same clock keeps running.'
                     : current.offlineOrigin
-                    ? '$partnerName can see this session after you reconnect, but cannot join it.'
-                    : '$partnerName can join this authoritative timer at any time.',
+                    ? 'Solo until you reconnect.'
+                    : '$partnerName can join anytime.',
                 textAlign: TextAlign.center,
                 style: context.textTheme.bodyMedium?.copyWith(
                   color: context.colorScheme.onSurfaceVariant,

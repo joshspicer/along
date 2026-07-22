@@ -18,13 +18,13 @@ class WelcomeScreen extends ConsumerWidget {
     final availability = ref.watch(serverAvailabilityProvider).value;
     final serverUnavailable = availability == ServerAvailability.unavailable;
     return OnboardingScaffold(
-      eyebrow: 'A shared place to show up',
-      title: 'Make a little room that belongs to both of you.',
+      eyebrow: 'Along',
+      title: 'Focus, together.',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Focus on your own, meet in the same moment, and remember the time you found each other there.',
+            'Start on your own. Your partner can join anytime.',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -37,7 +37,7 @@ class WelcomeScreen extends ConsumerWidget {
           const SizedBox(height: 38),
           if (serverUnavailable) ...[
             Text(
-              'Along’s shared service is unavailable. You can still focus and keep a private history on this device.',
+              'The shared service is offline. Solo focus still works.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
@@ -71,7 +71,7 @@ class WelcomeScreen extends ConsumerWidget {
         ],
       ),
       footer: Text(
-        'Private by default. Just the two of you.',
+        'Private. Just the two of you.',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall,
       ),

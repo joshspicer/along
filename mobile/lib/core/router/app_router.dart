@@ -25,60 +25,89 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) => _redirect(ref, state),
     routes: [
-      GoRoute(path: '/splash', builder: (_, _) => const _SplashScreen()),
+      GoRoute(
+        path: '/splash',
+        pageBuilder: (_, _) => _page(const _SplashScreen()),
+      ),
       GoRoute(
         path: '/welcome',
-        builder: (_, state) =>
-            WelcomeScreen(invite: state.uri.queryParameters['invite']),
+        pageBuilder: (_, state) =>
+            _page(WelcomeScreen(invite: state.uri.queryParameters['invite'])),
       ),
       GoRoute(
         path: '/passkey',
-        builder: (_, state) =>
-            PasskeyScreen(login: state.uri.queryParameters['mode'] == 'login'),
+        pageBuilder: (_, state) => _page(
+          PasskeyScreen(login: state.uri.queryParameters['mode'] == 'login'),
+        ),
       ),
-      GoRoute(path: '/recover', builder: (_, _) => const RecoveryScreen()),
+      GoRoute(
+        path: '/recover',
+        pageBuilder: (_, _) => _page(const RecoveryScreen()),
+      ),
       GoRoute(
         path: '/recovery-kit',
-        builder: (_, _) => const RecoveryKitScreen(),
+        pageBuilder: (_, _) => _page(const RecoveryKitScreen()),
       ),
-      GoRoute(path: '/pair', builder: (_, _) => const PairingScreen()),
+      GoRoute(
+        path: '/pair',
+        pageBuilder: (_, _) => _page(const PairingScreen()),
+      ),
       GoRoute(
         path: '/join/:token',
-        builder: (_, state) =>
-            PairingScreen(incomingToken: state.pathParameters['token']),
+        pageBuilder: (_, state) =>
+            _page(PairingScreen(incomingToken: state.pathParameters['token'])),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (_, _) => const NotificationScreen(),
+        pageBuilder: (_, _) => _page(const NotificationScreen()),
       ),
       ShellRoute(
-        builder: (_, state, child) =>
-            PrimaryScaffold(location: state.uri.path, child: child),
+        pageBuilder: (_, state, child) =>
+            _page(PrimaryScaffold(location: state.uri.path, child: child)),
         routes: [
-          GoRoute(path: '/focus', builder: (_, _) => const FocusScreen()),
+          GoRoute(
+            path: '/focus',
+            pageBuilder: (_, _) => _page(const FocusScreen()),
+          ),
           GoRoute(
             path: '/look-back',
-            builder: (_, _) => const LookBackScreen(),
+            pageBuilder: (_, _) => _page(const LookBackScreen()),
           ),
         ],
       ),
       GoRoute(
         path: '/live/:sessionId',
-        builder: (_, state) =>
-            LiveFocusScreen(sessionId: state.pathParameters['sessionId']!),
+        pageBuilder: (_, state) => _page(
+          LiveFocusScreen(sessionId: state.pathParameters['sessionId']!),
+        ),
       ),
       GoRoute(
         path: '/complete/:sessionId',
-        builder: (_, state) =>
-            CompletionScreen(sessionId: state.pathParameters['sessionId']!),
+        pageBuilder: (_, state) => _page(
+          CompletionScreen(sessionId: state.pathParameters['sessionId']!),
+        ),
       ),
-      GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      GoRoute(
+        path: '/settings',
+        pageBuilder: (_, _) => _page(const SettingsScreen()),
+      ),
     ],
     errorBuilder: (_, _) => const _NotFoundScreen(),
   );
   ref.onDispose(router.dispose);
   return router;
 });
+
+CustomTransitionPage<void> _page(Widget child) => appPageForTest(child);
+
+@visibleForTesting
+CustomTransitionPage<void> appPageForTest(Widget child) => CustomTransitionPage(
+  opaque: true,
+  transitionDuration: Duration.zero,
+  reverseTransitionDuration: Duration.zero,
+  transitionsBuilder: (_, _, _, child) => child,
+  child: child,
+);
 
 String? _redirect(Ref ref, GoRouterState route) {
   final authAsync = ref.read(authControllerProvider);

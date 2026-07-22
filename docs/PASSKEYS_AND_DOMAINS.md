@@ -38,6 +38,12 @@ application identifier, AASA entry, asset link, and provisioning profile.
 Native passkey ceremonies cannot be meaningfully tested against an unassociated
 localhost application.
 
+The iOS entitlement includes both `along.spicer.dev` and
+`along-dev.spicer.dev`. This is supported: each host must independently serve a
+valid AASA file naming `N7C8DEK852.com.joshspicer.along`. Passkeys remain scoped
+to the RP ID that created them, so development and production credentials do
+not cross between hosts.
+
 ## Ceremony and recovery policy
 
 - Registration and discoverable login require user verification and resident

@@ -8,6 +8,8 @@
 	<array>
 		<string>applinks:along.spicer.dev</string>
 		<string>webcredentials:along.spicer.dev</string>
+		<string>applinks:along-dev.spicer.dev</string>
+		<string>webcredentials:along-dev.spicer.dev</string>
 	</array>
 </dict>
 </plist>

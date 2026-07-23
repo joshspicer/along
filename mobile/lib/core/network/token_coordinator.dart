@@ -8,33 +8,35 @@ import '../diagnostics/diagnostic_service.dart';
 import '../secure/secure_store.dart';
 
 class TokenCoordinator {
-  TokenCoordinator(
-    this._secureStore,
-    RuntimeConfig config, {
-    DiagnosticService? diagnostics,
-  }) : _diagnostics = diagnostics,
-    _raw = Dio(_baseOptions(config)),
-      client = Dio(_baseOptions(config)) {
-    _raw.interceptors.add(
-      InterceptorsWrapper(onError: _recordFailure),
-    );
-    client.interceptors.add(
-      QueuedInterceptorsWrapper(
-        onRequest: _authorize,
-        onError: _retryUnauthorized,
-      ),
-    );
+  TokenCoordinator(this._secureStore, RuntimeConfig config, {this._diagnostics})
+    : _raw = Dio(_baseOptions(config.apiBaseUrl, config)),
+      _passkeyRaw = Dio(_baseOptions(config.passkeyBaseUrl, config)),
+      client = Dio(_baseOptions(config.apiBaseUrl, config)),
+      passkeyClient = Dio(_baseOptions(config.passkeyBaseUrl, config)) {
+    _raw.interceptors.add(InterceptorsWrapper(onError: _recordFailure));
+    _passkeyRaw.interceptors.add(InterceptorsWrapper(onError: _recordFailure));
+    for (final authorizedClient in [client, passkeyClient]) {
+      authorizedClient.interceptors.add(
+        QueuedInterceptorsWrapper(
+          onRequest: _authorize,
+          onError: _retryUnauthorized,
+        ),
+      );
+    }
   }
 
   final SecureStore _secureStore;
   final DiagnosticService? _diagnostics;
   final Dio _raw;
+  final Dio _passkeyRaw;
   final Dio client;
+  final Dio passkeyClient;
   String? _accessToken;
   DateTime? _expiresAt;
   Future<Map<String, Object?>?>? _refreshing;
 
   Dio get publicClient => _raw;
+  Dio get passkeyPublicClient => _passkeyRaw;
   String? get accessToken => _accessToken;
 
   Future<Map<String, Object?>?> restore() async {
@@ -153,15 +155,17 @@ class TokenCoordinator {
     }
   }
 
-  static BaseOptions _baseOptions(RuntimeConfig config) => BaseOptions(
-    baseUrl: config.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: Duration(seconds: config.requestTimeoutSeconds),
-    sendTimeout: Duration(seconds: config.requestTimeoutSeconds),
-    headers: const <String, Object?>{
-      HttpHeaders.acceptHeader: 'application/json',
-      HttpHeaders.contentTypeHeader: 'application/json',
-    },
-    validateStatus: (status) => status != null && status >= 200 && status < 300,
-  );
+  static BaseOptions _baseOptions(String baseUrl, RuntimeConfig config) =>
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: Duration(seconds: config.requestTimeoutSeconds),
+        sendTimeout: Duration(seconds: config.requestTimeoutSeconds),
+        headers: const <String, Object?>{
+          HttpHeaders.acceptHeader: 'application/json',
+          HttpHeaders.contentTypeHeader: 'application/json',
+        },
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 300,
+      );
 }

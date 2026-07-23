@@ -52,7 +52,7 @@ class WelcomeScreen extends ConsumerWidget {
             ),
           ] else ...[
             AsyncButton(
-              label: 'Create our space',
+              label: 'Get started',
               icon: Icons.arrow_forward_rounded,
               onPressed: () => context.go(_passkeyLocation('create')),
             ),
@@ -64,7 +64,12 @@ class WelcomeScreen extends ConsumerWidget {
               onPressed: () => context.go(_passkeyLocation('login')),
             ),
             TextButton(
-              onPressed: () => context.go('/recover'),
+              onPressed: () => context.go(
+                Uri(
+                  path: '/recover',
+                  queryParameters: invite == null ? null : {'invite': invite!},
+                ).toString(),
+              ),
               child: const Text('Use a recovery code'),
             ),
           ],

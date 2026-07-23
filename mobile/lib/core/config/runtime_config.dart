@@ -14,6 +14,16 @@ class RuntimeConfig {
   final String apnsEnvironment;
   final int requestTimeoutSeconds;
 
+  String get passkeyBaseUrl {
+    final apiHost = Uri.parse(apiBaseUrl).host;
+    final productionHost = Uri.parse(AppConfig.productionApiBaseUrl).host;
+    return apiHost == productionHost
+        ? AppConfig.productionApiBaseUrl
+        : AppConfig.developmentPasskeyBaseUrl;
+  }
+
+  String get passkeyRelyingPartyId => Uri.parse(passkeyBaseUrl).host;
+
   Uri get webSocketUri {
     final httpUri = Uri.parse(apiBaseUrl);
     return httpUri.replace(

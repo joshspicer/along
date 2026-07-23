@@ -41,7 +41,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Create our space'), findsOneWidget);
+      expect(find.text('Get started'), findsOneWidget);
       expect(find.text('Focus'), findsNothing);
       expect(tester.takeException(), isNull);
     },
@@ -71,6 +71,46 @@ void main() {
     expect(find.byType(NavigationDestination), findsNWidgets(2));
     expect(find.text('Focus'), findsOneWidget);
     expect(find.text('Look back'), findsOneWidget);
+  });
+
+  testWidgets('recovery keeps an incoming invitation', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/welcome?invite=private-token',
+      routes: [
+        GoRoute(
+          path: '/welcome',
+          builder: (_, state) =>
+              WelcomeScreen(invite: state.uri.queryParameters['invite']),
+        ),
+        GoRoute(
+          path: '/recover',
+          builder: (_, state) => Scaffold(
+            body: Text(state.uri.queryParameters['invite'] ?? 'missing'),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          serverAvailabilityProvider.overrideWith(
+            _AvailableServerController.new,
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AlongTheme.light(),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final recovery = find.text('Use a recovery code');
+    await tester.ensureVisible(recovery);
+    await tester.tap(recovery);
+    await tester.pumpAndSettle();
+
+    expect(find.text('private-token'), findsOneWidget);
   });
 }
 

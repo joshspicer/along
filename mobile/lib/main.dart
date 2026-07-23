@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/router/app_router.dart';
+import 'core/config/runtime_config.dart';
 import 'core/providers.dart';
+import 'core/router/app_router.dart';
 import 'core/theme/along_theme.dart';
 
 Future<void> main() async {

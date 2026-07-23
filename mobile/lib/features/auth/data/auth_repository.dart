@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
-import '../../../core/database/app_database.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/database/app_database.dart';
 import '../../../core/network/token_coordinator.dart';
 import '../../../core/platform/passkey_service.dart';
 import '../../../core/secure/secure_store.dart';
@@ -47,7 +47,7 @@ class AuthRepository {
   }
 
   Future<AuthState> register(String displayName) async {
-    final optionsResponse = await tokens.publicClient
+    final optionsResponse = await tokens.passkeyPublicClient
         .post<Map<String, Object?>>(
           '/v1/auth/register/options',
           data: <String, Object?>{'display_name': displayName},
@@ -59,23 +59,24 @@ class AuthRepository {
       publicKey: publicKey,
       invoke: () => passkeyService.register(publicKey),
     );
-    final response = await tokens.publicClient.post<Map<String, Object?>>(
-      '/v1/auth/register/finish',
-      data: credential,
-      options: Options(
-        headers: await _ceremonyHeaders(
-          options['challenge_id']! as String,
-          passkeyLabel: await _deviceName(),
-        ),
-      ),
-    );
+    final response = await tokens.passkeyPublicClient
+        .post<Map<String, Object?>>(
+          '/v1/auth/register/finish',
+          data: credential,
+          options: Options(
+            headers: await _ceremonyHeaders(
+              options['challenge_id']! as String,
+              passkeyLabel: await _deviceName(),
+            ),
+          ),
+        );
     final payload = response.data!;
     await tokens.captureAuthPayload(payload);
     return _stateFromPayload(payload);
   }
 
   Future<AuthState> signIn() async {
-    final optionsResponse = await tokens.publicClient
+    final optionsResponse = await tokens.passkeyPublicClient
         .post<Map<String, Object?>>(
           '/v1/auth/login/options',
           data: const <String, Object?>{},
@@ -87,13 +88,14 @@ class AuthRepository {
       publicKey: publicKey,
       invoke: () => passkeyService.authenticate(publicKey),
     );
-    final response = await tokens.publicClient.post<Map<String, Object?>>(
-      '/v1/auth/login/finish',
-      data: credential,
-      options: Options(
-        headers: await _ceremonyHeaders(options['challenge_id']! as String),
-      ),
-    );
+    final response = await tokens.passkeyPublicClient
+        .post<Map<String, Object?>>(
+          '/v1/auth/login/finish',
+          data: credential,
+          options: Options(
+            headers: await _ceremonyHeaders(options['challenge_id']! as String),
+          ),
+        );
     final payload = response.data!;
     await tokens.captureAuthPayload(payload);
     return _stateFromPayload(payload);
@@ -124,10 +126,11 @@ class AuthRepository {
   }
 
   Future<void> addPasskey() async {
-    final optionsResponse = await tokens.client.post<Map<String, Object?>>(
-      '/v1/auth/passkeys/options',
-      data: const <String, Object?>{},
-    );
+    final optionsResponse = await tokens.passkeyClient
+        .post<Map<String, Object?>>(
+          '/v1/auth/passkeys/options',
+          data: const <String, Object?>{},
+        );
     final options = optionsResponse.data!;
     final publicKey = Map<String, Object?>.from(options['publicKey']! as Map);
     final credential = await _passkeyCredential(
@@ -135,7 +138,7 @@ class AuthRepository {
       publicKey: publicKey,
       invoke: () => passkeyService.register(publicKey),
     );
-    await tokens.client.post<void>(
+    await tokens.passkeyClient.post<void>(
       '/v1/auth/passkeys/finish',
       data: credential,
       options: Options(
@@ -244,21 +247,23 @@ class AuthRepository {
       try {
         final rp = publicKey['rp'];
         final relyingPartyId = rp is Map ? rp['id']?.toString() ?? '' : '';
-        final response = await tokens.publicClient.post<Map<String, Object?>>(
-          '/v1/diagnostics/passkey',
-          data: <String, Object?>{
-            'platform': Platform.isIOS ? 'ios' : 'android',
-            'operation': operation,
-            'relying_party_id': relyingPartyId,
-            'error_domain': error.details['domain']?.toString() ?? '',
-            'error_code': error.details['code'] is int
-                ? error.details['code']
-                : int.tryParse(error.details['code']?.toString() ?? '') ?? 0,
-            'error_description':
-                error.details['description']?.toString() ?? error.message,
-            'app_commit': AppConfig.gitCommit,
-          },
-        );
+        final response = await tokens.passkeyPublicClient
+            .post<Map<String, Object?>>(
+              '/v1/diagnostics/passkey',
+              data: <String, Object?>{
+                'platform': Platform.isIOS ? 'ios' : 'android',
+                'operation': operation,
+                'relying_party_id': relyingPartyId,
+                'error_domain': error.details['domain']?.toString() ?? '',
+                'error_code': error.details['code'] is int
+                    ? error.details['code']
+                    : int.tryParse(error.details['code']?.toString() ?? '') ??
+                          0,
+                'error_description':
+                    error.details['description']?.toString() ?? error.message,
+                'app_commit': AppConfig.gitCommit,
+              },
+            );
         diagnosticId = response.data?['diagnostic_id']?.toString();
       } on Object {
         // Diagnostics are best-effort and never replace the passkey failure.

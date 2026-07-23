@@ -51,13 +51,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (_, _) => _page(const RecoveryKitScreen()),
       ),
       GoRoute(
-        path: '/pair',
-        pageBuilder: (_, _) => _page(const PairingScreen()),
-      ),
-      GoRoute(
         path: '/join/:token',
         pageBuilder: (_, state) =>
-            _page(PairingScreen(incomingToken: state.pathParameters['token'])),
+            _page(PairingScreen(incomingToken: state.pathParameters['token']!)),
       ),
       GoRoute(
         path: '/notifications',
@@ -126,6 +122,7 @@ String? _redirect(Ref ref, GoRouterState route) {
     });
     return destination;
   }
+
   final auth = switch (authAsync) {
     AsyncData<AuthState>(:final value) => value,
     _ => null,
@@ -138,16 +135,21 @@ String? _redirect(Ref ref, GoRouterState route) {
       (path.startsWith('/join/') ? route.pathParameters['token'] : null);
   if (!auth.canUseApp) {
     final publicPath =
-        path == '/welcome' || path == '/passkey' || path == '/recover';
+        path == '/welcome' ||
+        path == '/passkey' ||
+        path == '/recover' ||
+        path == '/settings/advanced';
     if (path.startsWith('/join/') && invite != null) {
-      return redirect('/welcome?invite=$invite', 'signed_out_invite');
+      return redirect(
+        inviteLocationForTest('/welcome', invite),
+        'signed_out_invite',
+      );
     }
     if (auth.isOfflineGuest) {
       if (path == '/splash' ||
           path == '/welcome' ||
           path == '/passkey' ||
           path == '/recover' ||
-          path == '/pair' ||
           path.startsWith('/join/') ||
           path == '/notifications') {
         return redirect('/focus', 'offline_guest');
@@ -157,13 +159,19 @@ String? _redirect(Ref ref, GoRouterState route) {
     return publicPath ? null : redirect('/welcome', 'signed_out');
   }
   if (auth.recoveryKit != null && path != '/recovery-kit') {
-    return redirect('/recovery-kit', 'recovery_kit');
+    return redirect(
+      inviteLocationForTest('/recovery-kit', invite),
+      'recovery_kit',
+    );
   }
   if (auth.recoveryKit == null && path == '/recovery-kit') {
-    return redirect('/pair', 'recovery_acknowledged');
+    return redirect(
+      postRecoveryLocationForTest(invite),
+      'recovery_acknowledged',
+    );
   }
   if (auth.account?.pairId == null) {
-    if (path.startsWith('/join/') || path == '/pair') {
+    if (path.startsWith('/join/')) {
       return null;
     }
     if (invite != null) {
@@ -185,7 +193,6 @@ String? _redirect(Ref ref, GoRouterState route) {
       path == '/welcome' ||
       path == '/passkey' ||
       path == '/recover' ||
-      path == '/pair' ||
       path.startsWith('/join/') ||
       path == '/notifications') {
     return redirect('/focus', 'authenticated');
@@ -199,6 +206,16 @@ String _diagnosticRoute(String path) {
   if (path.startsWith('/complete/')) return '/complete/:sessionId';
   return Uri.tryParse(path)?.path ?? path;
 }
+
+@visibleForTesting
+String inviteLocationForTest(String path, String? invite) {
+  if (invite == null || invite.isEmpty) return path;
+  return Uri(path: path, queryParameters: {'invite': invite}).toString();
+}
+
+@visibleForTesting
+String postRecoveryLocationForTest(String? invite) =>
+    invite == null || invite.isEmpty ? '/focus' : '/join/$invite';
 
 class _AuthRouterRefresh extends ChangeNotifier {
   _AuthRouterRefresh(Ref ref) {

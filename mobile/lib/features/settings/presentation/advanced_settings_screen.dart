@@ -67,6 +67,37 @@ class _AdvancedSettingsScreenState
                 hintText: AppConfig.defaultApiBaseUrl,
               ),
             ),
+            if (config case AsyncData(:final value)) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Passkeys',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(value.passkeyBaseUrl),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Relying party: ${value.passkeyRelyingPartyId}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        value.apiBaseUrl == value.passkeyBaseUrl
+                            ? 'Passkeys use the production server.'
+                            : 'Only passkey setup uses this associated HTTPS endpoint. Other requests use your server endpoint.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _apnsEnvironment,

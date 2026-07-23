@@ -34,3 +34,12 @@ machine-readable contract at `server/openapi.yaml`.
 
 Go is pinned to 1.26.5. Flutter is pinned through FVM to 3.44.6 / Dart 3.12.2.
 No credentials or generated build directories belong in source control.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before proposing changes. Report security
+issues privately as described in [docs/SECURITY.md](docs/SECURITY.md).
+
+## License
+
+Along is licensed under the [GNU Affero General Public License version 3](LICENSE).

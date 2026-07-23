@@ -137,6 +137,57 @@ func TestPasskeyTokensRecoveryAndRevocation(t *testing.T) {
 	}
 }
 
+func TestRegistrationReusesInstallationIDAcrossAccounts(t *testing.T) {
+	data, service := testServices(t)
+	installationID := uuid.New()
+	first := registerOnDevice(t, service, "Jamie", domain.DeviceInfo{
+		ID:       installationID,
+		Platform: "ios",
+		Name:     "Jamie's iPhone",
+	})
+	second := registerOnDevice(t, service, "Alex", domain.DeviceInfo{
+		ID:       installationID,
+		Platform: "ios",
+		Name:     "Alex's iPhone",
+	})
+
+	for _, account := range []registeredAccount{first, second} {
+		sessions, err := data.ListSessions(
+			context.Background(),
+			account.result.Account.ID,
+			uuid.Nil,
+		)
+		if err != nil || len(sessions) != 1 || sessions[0].InstallationName != account.device.Name {
+			t.Fatalf("sessions for %s = %#v, %v", account.result.Account.DisplayName, sessions, err)
+		}
+	}
+
+	if err := data.RevokeInstallation(
+		context.Background(),
+		first.result.Account.ID,
+		installationID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	firstClaimed, err := service.ParseAccessToken(first.result.Tokens.AccessToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := data.ValidateAuthSession(context.Background(), firstClaimed); err == nil {
+		t.Fatal("first account session survived installation revocation")
+	}
+	secondClaimed, err := service.ParseAccessToken(second.result.Tokens.AccessToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := data.ValidateAuthSession(context.Background(), secondClaimed); err != nil {
+		t.Fatalf("second account session was affected by first account revocation: %v", err)
+	}
+	if _, err := service.Refresh(context.Background(), second.result.Tokens.RefreshToken); err != nil {
+		t.Fatalf("refresh second account: %v", err)
+	}
+}
+
 func TestPairAuthorizationSessionConcurrencyAndReplay(t *testing.T) {
 	data, service := testServices(t)
 	jamie := register(t, service, "Jamie", "Jamie's iPhone")
@@ -367,6 +418,11 @@ func testServices(t *testing.T) (*store.Store, *alongauth.Service) {
 func register(t *testing.T, service *alongauth.Service, displayName, deviceName string) registeredAccount {
 	t.Helper()
 	device := domain.DeviceInfo{ID: uuid.New(), Platform: "ios", Name: deviceName}
+	return registerOnDevice(t, service, displayName, device)
+}
+
+func registerOnDevice(t *testing.T, service *alongauth.Service, displayName string, device domain.DeviceInfo) registeredAccount {
+	t.Helper()
 	options, err := service.BeginAccountRegistration(context.Background(), displayName)
 	if err != nil {
 		t.Fatalf("begin registration: %v", err)
@@ -390,7 +446,7 @@ func register(t *testing.T, service *alongauth.Service, displayName, deviceName 
 		options.ChallengeID,
 		request,
 		device,
-		deviceName,
+		device.Name,
 	)
 	if err != nil {
 		t.Fatalf("finish registration: %v", err)
@@ -404,7 +460,7 @@ func register(t *testing.T, service *alongauth.Service, displayName, deviceName 
 		options.ChallengeID,
 		replay,
 		device,
-		deviceName,
+		device.Name,
 	); appCode(err) != "ceremony_expired" {
 		t.Fatalf("registration challenge replay error = %v", err)
 	}

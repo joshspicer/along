@@ -297,12 +297,11 @@ func createSession(
 	if _, err := tx.Exec(ctx, `
 		INSERT INTO device_installs (id, account_id, platform, name)
 		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (id) DO UPDATE
+		ON CONFLICT (id, account_id) DO UPDATE
 		SET platform = EXCLUDED.platform,
 		    name = EXCLUDED.name,
 		    last_seen_at = clock_timestamp(),
-		    revoked_at = NULL
-		WHERE device_installs.account_id = EXCLUDED.account_id`,
+		    revoked_at = NULL`,
 		device.ID,
 		accountID,
 		device.Platform,
@@ -469,7 +468,7 @@ func (s *Store) RotateRefresh(
 		       d.revoked_at
 		FROM refresh_tokens r
 		JOIN auth_sessions s ON s.id = r.auth_session_id
-		JOIN device_installs d ON d.id = s.device_install_id
+		JOIN device_installs d ON d.id = s.device_install_id AND d.account_id = s.account_id
 		JOIN accounts a ON a.id = s.account_id AND a.status = 'active'
 		WHERE r.id = $1
 		FOR UPDATE OF r, s`,
@@ -560,8 +559,9 @@ func (s *Store) RotateRefresh(
 		return domain.AuthIdentity{}, err
 	}
 	if _, err := tx.Exec(ctx, `
-		UPDATE device_installs SET last_seen_at = $2 WHERE id = $1`,
+		UPDATE device_installs SET last_seen_at = $3 WHERE id = $1 AND account_id = $2`,
 		installationID,
+		accountID,
 		now,
 	); err != nil {
 		return domain.AuthIdentity{}, err
@@ -582,7 +582,7 @@ func (s *Store) ValidateAuthSession(ctx context.Context, claimed domain.AuthIden
 		SELECT a.display_name, pm.pair_id
 		FROM auth_sessions s
 		JOIN accounts a ON a.id = s.account_id
-		JOIN device_installs d ON d.id = s.device_install_id
+		JOIN device_installs d ON d.id = s.device_install_id AND d.account_id = s.account_id
 		LEFT JOIN webauthn_credentials c ON c.credential_id = s.credential_id
 		LEFT JOIN pair_members pm ON pm.account_id = a.id
 		WHERE s.id = $1
@@ -693,7 +693,7 @@ func (s *Store) ListSessions(ctx context.Context, accountID, currentID uuid.UUID
 		SELECT s.id, s.device_install_id, d.name, d.platform,
 		       s.created_at, s.last_seen_at, s.id = $2
 		FROM auth_sessions s
-		JOIN device_installs d ON d.id = s.device_install_id
+		JOIN device_installs d ON d.id = s.device_install_id AND d.account_id = s.account_id
 		WHERE s.account_id = $1 AND s.revoked_at IS NULL AND s.expires_at > clock_timestamp()
 		ORDER BY s.last_seen_at DESC`,
 		accountID,

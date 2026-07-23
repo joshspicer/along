@@ -114,11 +114,20 @@ func (a *API) accessLogMiddleware(next http.Handler) http.Handler {
 		a.logger.Log(r.Context(), slog.LevelInfo, "http request",
 			"request_id", requestID(r.Context()),
 			"method", r.Method,
-			"path", r.URL.Path,
+			"path", diagnosticRequestPath(r.URL.Path),
 			"status", recorder.status,
 			"duration_ms", time.Since(started).Milliseconds(),
 		)
 	})
+}
+
+func diagnosticRequestPath(path string) string {
+	for _, prefix := range []string{"/join/", "/live/", "/complete/"} {
+		if strings.HasPrefix(path, prefix) {
+			return prefix + ":id"
+		}
+	}
+	return path
 }
 
 func secureHeaders(next http.Handler) http.Handler {

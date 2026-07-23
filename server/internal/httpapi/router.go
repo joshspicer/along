@@ -66,6 +66,7 @@ func New(
 	router.Get("/health/ready", api.ready)
 	router.Get("/.well-known/apple-app-site-association", api.appleAppSiteAssociation)
 	router.Get("/.well-known/assetlinks.json", api.androidAssetLinks)
+	router.Get("/join/{token}", api.pairInviteLanding)
 	router.Get("/v1/meta", api.meta)
 	router.With(api.rateLimitMiddleware(newRateLimiter(10, time.Minute))).Post(
 		"/v1/diagnostics/passkey",

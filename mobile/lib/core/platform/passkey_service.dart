@@ -58,18 +58,16 @@ class PasskeyException implements Exception {
   final Map<String, Object?> details;
   final String? diagnosticId;
 
-  PasskeyException withDiagnosticId(String? value) => PasskeyException(
-    message,
-    details: details,
-    diagnosticId: value,
-  );
+  PasskeyException withDiagnosticId(String? value) =>
+      PasskeyException(message, details: details, diagnosticId: value);
 
   String get debugReport {
     final lines = <String>[
       _bounded(message, 500),
       if (diagnosticId != null) 'Diagnostic ID: $diagnosticId',
       for (final key in const ['domain', 'code', 'description'])
-        if (details[key] != null) '$key: ${_bounded(details[key].toString(), 500)}',
+        if (details[key] != null)
+          '$key: ${_bounded(details[key].toString(), 500)}',
     ];
     return lines.join('\n');
   }

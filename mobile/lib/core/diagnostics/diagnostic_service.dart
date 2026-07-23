@@ -25,7 +25,8 @@ class DiagnosticEvent {
 
   String get printable {
     final values = fields.entries.map((entry) => '${entry.key}=${entry.value}');
-    return '${timestamp.toUtc().toIso8601String()} $name ${values.join(' ')}'.trim();
+    return '${timestamp.toUtc().toIso8601String()} $name ${values.join(' ')}'
+        .trim();
   }
 }
 

@@ -195,13 +195,20 @@ import UserNotifications
     didCompleteWithError error: Error
   ) {
     let authorizationError = error as? ASAuthorizationError
+    let errorCode = authorizationError.map { String($0.code.rawValue) } ?? "unknown"
+    let errorMessage = error.localizedDescription
+    NSLog("Along passkey authorization failed: code=%@ error=%@", errorCode, errorMessage)
     finishPasskey(
       error: FlutterError(
         code: authorizationError?.code == .canceled ? "cancelled" : "passkey_failed",
         message: authorizationError?.code == .canceled
           ? "Passkey setup was cancelled."
-          : "The passkey could not be verified.",
-        details: nil
+          : "Passkey failed (Apple error \(errorCode)): \(errorMessage)",
+        details: [
+          "domain": (error as NSError).domain,
+          "code": (error as NSError).code,
+          "description": errorMessage,
+        ]
       )
     )
   }

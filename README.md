@@ -8,7 +8,7 @@ The monorepo contains:
 
 - `mobile/` — Flutter app for iOS and Android
 - `server/` — Go collaboration API, WebSocket service, APNs worker, and migrations
-- `deploy/` — Caddy and production-operation assets
+- `deploy/` — reverse-proxy config and production-operation assets
 - `docs/` — product contract, architecture, privacy, and release guidance
 
 There are intentionally no habits, schedules, feeds, scores, streaks,
@@ -21,11 +21,10 @@ local secrets:
 
 ```sh
 ./scripts/generate-secrets.sh
-docker compose up --build postgres migrate api caddy
+docker compose up --build postgres migrate api
 ```
 
-The API is available through Caddy at `https://localhost` (development
-certificate). See
+The API is available at `http://localhost:6009`. See
 [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for setup and operations.
 
 Native passkeys require an owned HTTPS relying-party domain. See

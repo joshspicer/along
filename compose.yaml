@@ -56,9 +56,11 @@ services:
       args:
         GIT_COMMIT: ${GIT_COMMIT:-development}
     restart: unless-stopped
+    ports:
+      - "6009:6009"
     environment:
       ALONG_ENV: ${ALONG_ENV:-production}
-      HTTP_ADDRESS: :8080
+      HTTP_ADDRESS: :6009
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://along.spicer.dev}
       DATABASE_URL_FILE: /run/secrets/database_url
       JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
@@ -78,7 +80,7 @@ services:
         condition: service_completed_successfully
     read_only: true
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health/ready"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:6009/health/ready"]
       interval: 15s
       timeout: 3s
       retries: 5
@@ -117,30 +119,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  caddy:
-    image: caddy:2.10-alpine
-    restart: unless-stopped
-    environment:
-      ALONG_DOMAIN: ${ALONG_DOMAIN:-localhost}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./deploy/well-known:/srv/well-known:ro
-      - ./deploy/site:/srv/site:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      api:
-        condition: service_healthy
-    read_only: true
-    mem_limit: 128m
-    cpus: 0.5
-    security_opt:
-      - no-new-privileges:true
-
   backup:
     profiles: ["operations"]
     build: ./deploy/backup
@@ -164,8 +142,6 @@ services:
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
 
 secrets:
   postgres_password:

@@ -21,7 +21,7 @@ steps before passkeys work outside development:
 4. Serve that extensionless file at
    `https://along.spicer.dev/.well-known/apple-app-site-association` with
    `Content-Type: application/json`, HTTP 200, no redirect, and a valid public
-   certificate. Caddy is configured to do this.
+   certificate. The reverse proxy must handle TLS termination.
 5. Keep `applinks:along.spicer.dev` and `webcredentials:along.spicer.dev` in the signed iOS
    entitlements. Regenerate distribution profiles after enabling capabilities.
 6. Replace the Android certificate placeholder in `assetlinks.json` with the

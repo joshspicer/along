@@ -41,6 +41,6 @@
 
 - [ ] Publish a semantic, immutable multi-architecture image with provenance and
       SBOM using `release-server.yml` or `scripts/release-server.sh`.
-- [ ] Deploy migration job, then API, worker, and Caddy.
+- [ ] Deploy migration job, then API and worker.
 - [ ] Verify health, synthetic pair start/join/complete, cursor replay, and APNs.
 - [ ] Record image digest and rollback digest in the change ticket.

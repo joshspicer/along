@@ -3,7 +3,7 @@
 ## Production prerequisites
 
 - A Linux host with Docker Engine 29+ and Compose v2
-- DNS for `along.spicer.dev` pointed at the Caddy host, with ports 80/443 reachable
+- DNS for `along.spicer.dev` pointed at the host, with port 6009 reachable behind a reverse proxy
 - PostgreSQL storage on encrypted durable media
 - Apple Team ID, APNs key ID, and an APNs `.p8` with push permission
 - An age recipient whose private identity is held off-host
@@ -31,14 +31,14 @@ deploy mutable `latest` in production.
 ```sh
 docker compose pull
 docker compose run --rm migrate
-docker compose up -d postgres api apns caddy
+docker compose up -d postgres api apns
 docker compose ps
 curl --fail https://along.spicer.dev/health/ready
 ```
 
 Migrations take a PostgreSQL advisory lock, run transactionally, and are safe to
 retry. The API never auto-migrates. Roll out migrations before multiple API
-replicas. Add replicas only behind Caddy; PostgreSQL `LISTEN/NOTIFY` propagates
+replicas. Add replicas only behind a reverse proxy; PostgreSQL `LISTEN/NOTIFY` propagates
 cursor hints while the append-only event log remains the durable source.
 
 The application image runs as UID/GID 65532 with a read-only root filesystem.

@@ -13,6 +13,7 @@ import (
 
 type Config struct {
 	Environment          string
+	Domain               string
 	HTTPAddress          string
 	DatabaseURL          string
 	PublicBaseURL        string
@@ -28,6 +29,8 @@ type Config struct {
 	ShutdownTimeout      time.Duration
 	ReadinessTimeout     time.Duration
 	GitCommit            string
+	AppleTeamID          string
+	AndroidSigningSHA256 []string
 	APNSTeamID           string
 	APNSKeyID            string
 	APNSKeyPath          string
@@ -44,28 +47,32 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	domain := env("ALONG_DOMAIN", "localhost")
 	cfg := Config{
-		Environment:        env("ALONG_ENV", "development"),
-		HTTPAddress:        env("HTTP_ADDRESS", ":6009"),
-		DatabaseURL:        databaseURL,
-		PublicBaseURL:      env("PUBLIC_BASE_URL", "https://localhost"),
-		WebAuthnRPID:       env("WEBAUTHN_RP_ID", "localhost"),
-		WebAuthnRPOrigins:  splitCSV(env("WEBAUTHN_RP_ORIGINS", "https://localhost")),
-		AccessTokenTTL:     duration("ACCESS_TOKEN_TTL", 10*time.Minute),
-		RefreshTokenTTL:    duration("REFRESH_TOKEN_TTL", 30*24*time.Hour),
-		ChallengeTTL:       duration("WEBAUTHN_CHALLENGE_TTL", 5*time.Minute),
-		InviteTTL:          duration("PAIR_INVITE_TTL", 48*time.Hour),
-		RateLimitPerMinute: integer("RATE_LIMIT_PER_MINUTE", 120),
-		ShutdownTimeout:    duration("SHUTDOWN_TIMEOUT", 15*time.Second),
-		ReadinessTimeout:   duration("READINESS_TIMEOUT", 2*time.Second),
-		GitCommit:          env("GIT_COMMIT", "unknown"),
-		APNSTeamID:         os.Getenv("APNS_TEAM_ID"),
-		APNSKeyID:          os.Getenv("APNS_KEY_ID"),
-		APNSKeyPath:        env("APNS_KEY_PATH", "/run/secrets/apns_key"),
-		APNSTopic:          env("APNS_TOPIC", "com.joshspicer.along"),
-		APNSEnvironment:    env("APNS_ENVIRONMENT", "sandbox"),
-		APNSPollInterval:   duration("APNS_POLL_INTERVAL", 2*time.Second),
-		APNSBatchSize:      integer("APNS_BATCH_SIZE", 50),
+		Environment:          env("ALONG_ENV", "development"),
+		Domain:               domain,
+		HTTPAddress:          env("HTTP_ADDRESS", ":6009"),
+		DatabaseURL:          databaseURL,
+		PublicBaseURL:        env("PUBLIC_BASE_URL", "https://"+domain),
+		WebAuthnRPID:         env("WEBAUTHN_RP_ID", domain),
+		WebAuthnRPOrigins:    splitCSV(env("WEBAUTHN_RP_ORIGINS", "https://"+domain)),
+		AccessTokenTTL:       duration("ACCESS_TOKEN_TTL", 10*time.Minute),
+		RefreshTokenTTL:      duration("REFRESH_TOKEN_TTL", 30*24*time.Hour),
+		ChallengeTTL:         duration("WEBAUTHN_CHALLENGE_TTL", 5*time.Minute),
+		InviteTTL:            duration("PAIR_INVITE_TTL", 48*time.Hour),
+		RateLimitPerMinute:   integer("RATE_LIMIT_PER_MINUTE", 120),
+		ShutdownTimeout:      duration("SHUTDOWN_TIMEOUT", 15*time.Second),
+		ReadinessTimeout:     duration("READINESS_TIMEOUT", 2*time.Second),
+		GitCommit:            env("GIT_COMMIT", "unknown"),
+		AppleTeamID:          env("APPLE_TEAM_ID", "N7C8DEK852"),
+		AndroidSigningSHA256: splitCSV(os.Getenv("ANDROID_SIGNING_SHA256")),
+		APNSTeamID:           os.Getenv("APNS_TEAM_ID"),
+		APNSKeyID:            os.Getenv("APNS_KEY_ID"),
+		APNSKeyPath:          env("APNS_KEY_PATH", "/run/secrets/apns_key"),
+		APNSTopic:            env("APNS_TOPIC", "com.joshspicer.along"),
+		APNSEnvironment:      env("APNS_ENVIRONMENT", "sandbox"),
+		APNSPollInterval:     duration("APNS_POLL_INTERVAL", 2*time.Second),
+		APNSBatchSize:        integer("APNS_BATCH_SIZE", 50),
 	}
 	cfg.AllowInsecureDevKeys, _ = strconv.ParseBool(os.Getenv("ALONG_ALLOW_INSECURE_DEV_KEYS"))
 	cfg.TrustProxyHeaders, _ = strconv.ParseBool(os.Getenv("TRUST_PROXY_HEADERS"))
@@ -102,6 +109,9 @@ func (c Config) ValidateAPI() error {
 	}
 	if c.WebAuthnRPID == "" || len(c.WebAuthnRPOrigins) == 0 {
 		errs = append(errs, errors.New("WebAuthn RP ID and at least one origin are required"))
+	}
+	if c.Environment == "production" && len(c.AppleTeamID) != 10 {
+		errs = append(errs, errors.New("APPLE_TEAM_ID must be a 10-character Apple Team ID"))
 	}
 	for _, origin := range c.WebAuthnRPOrigins {
 		u, err := url.Parse(origin)

@@ -9,24 +9,23 @@ the Android credential provider, or a hardware authenticator.
 The owner of `along.spicer.dev` and Apple/Google developer accounts must complete these
 steps before passkeys work outside development:
 
-1. Keep the production WebAuthn RP ID exactly `along.spicer.dev` and origins exactly
-   HTTPS origins controlled by the same owner. Never change RP ID after launch;
-   existing passkeys are scoped to it.
+1. Keep `ALONG_DOMAIN=along.spicer.dev`. The server derives its public URL,
+   WebAuthn RP ID, and HTTPS origin from this value. Never change it after
+   launch; existing passkeys are scoped to the RP ID.
 2. In Apple Developer Certificates, Identifiers & Profiles, enable **Associated
    Domains** and **Push Notifications** for the explicit App ID
    `com.joshspicer.along`.
-3. Replace `REPLACE_WITH_TEAM_ID` in
-   `deploy/well-known/apple-app-site-association` with the ten-character Apple
-   Team ID. Keep both `applinks` and `webcredentials`.
-4. Serve that extensionless file at
+3. Set `APPLE_TEAM_ID` to the ten-character Apple Team ID. The API generates
+   both `applinks` and `webcredentials` entries.
+4. Verify the generated extensionless document at
    `https://along.spicer.dev/.well-known/apple-app-site-association` with
    `Content-Type: application/json`, HTTP 200, no redirect, and a valid public
    certificate. The reverse proxy must handle TLS termination.
 5. Keep `applinks:along.spicer.dev` and `webcredentials:along.spicer.dev` in the signed iOS
    entitlements. Regenerate distribution profiles after enabling capabilities.
-6. Replace the Android certificate placeholder in `assetlinks.json` with the
-   uppercase SHA-256 fingerprint from **Play App Signing**, not a local debug
-   key. Serve it at `/.well-known/assetlinks.json` without a redirect.
+6. Set `ANDROID_SIGNING_SHA256` to the uppercase SHA-256 fingerprint from
+   **Play App Signing**, not a local debug key. The API serves the generated
+   document at `/.well-known/assetlinks.json` without a redirect.
 7. Enable Credential Manager passkey association for
    `com.joshspicer.along`. Preserve that application ID for every release.
 8. Run `./scripts/check-associated-domains.sh` and verify both URLs from an

@@ -15,13 +15,15 @@ Generate local secret files with `./scripts/generate-secrets.sh`. Add
 copy an age private identity, Apple key, or signing credential into the
 repository or image. Set secret file mode `0600`.
 
-Before production, replace both `REPLACE_WITH` values under
-`deploy/well-known/`, then run:
+`ALONG_DOMAIN` automatically configures the public URL, WebAuthn RP ID, HTTPS
+origin, and generated association endpoints. Set `ANDROID_SIGNING_SHA256` to
+the Play App Signing certificate fingerprint when Android passkeys are enabled.
+Then run:
 
 ```sh
-./scripts/check-associated-domains.sh
 cp .env.example .env
 docker compose config --quiet
+./scripts/check-associated-domains.sh
 ```
 
 ## Deploy and migrate

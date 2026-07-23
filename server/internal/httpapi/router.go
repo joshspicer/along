@@ -64,6 +64,8 @@ func New(
 
 	router.Get("/health/live", api.live)
 	router.Get("/health/ready", api.ready)
+	router.Get("/.well-known/apple-app-site-association", api.appleAppSiteAssociation)
+	router.Get("/.well-known/assetlinks.json", api.androidAssetLinks)
 	router.Get("/v1/meta", api.meta)
 
 	router.Route("/v1/auth", func(r chi.Router) {
@@ -134,6 +136,42 @@ func (a *API) meta(w http.ResponseWriter, _ *http.Request) {
 		"git_commit":  a.cfg.GitCommit,
 		"server_time": time.Now().UTC(),
 	})
+}
+
+func (a *API) appleAppSiteAssociation(w http.ResponseWriter, _ *http.Request) {
+	appID := a.cfg.AppleTeamID + ".com.joshspicer.along"
+	writeJSON(w, http.StatusOK, map[string]any{
+		"applinks": map[string]any{
+			"apps": []string{},
+			"details": []any{map[string]any{
+				"appIDs": []string{appID},
+				"components": []any{
+					map[string]string{"/": "/join/*", "comment": "One-time pairing links"},
+					map[string]string{"/": "/focus", "comment": "Focus notification resync"},
+					map[string]string{"/": "/look-back", "comment": "Note notification resync"},
+				},
+			}},
+		},
+		"webcredentials": map[string]any{"apps": []string{appID}},
+	})
+}
+
+func (a *API) androidAssetLinks(w http.ResponseWriter, _ *http.Request) {
+	statements := []any{}
+	if len(a.cfg.AndroidSigningSHA256) > 0 {
+		statements = append(statements, map[string]any{
+			"relation": []string{
+				"delegate_permission/common.handle_all_urls",
+				"delegate_permission/common.get_login_creds",
+			},
+			"target": map[string]any{
+				"namespace":                "android_app",
+				"package_name":             "com.joshspicer.along",
+				"sha256_cert_fingerprints": a.cfg.AndroidSigningSHA256,
+			},
+		})
+	}
+	writeJSON(w, http.StatusOK, statements)
 }
 
 func contextWithTimeout(r *http.Request, timeout time.Duration) (context.Context, context.CancelFunc) {

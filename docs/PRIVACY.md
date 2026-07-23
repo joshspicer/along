@@ -13,11 +13,17 @@ Along collects only data needed for a private two-person focus space.
 | Optional note and cheer | User-requested pair communication | PostgreSQL and local Drift read model |
 | Encrypted APNs token | Transactional partner notification | AES-GCM ciphertext; plaintext only in worker memory |
 | Request ID, route, status, duration | Reliability and abuse response | Structured operational logs |
+| Passkey failure platform, operation, RP ID, native error, and app commit | Diagnose registration failures before authentication | Structured operational logs; excludes challenge, credential, attestation, name, and device ID |
 
 Along does **not** upload contacts, biometric data, device passcodes, passwords,
 precise location, advertising identifiers, browsing history, health data, or
 third-party analytics. It has no public profile, feed, score, streak, or
 cross-app tracking.
+
+Passkey failure diagnostics are sent only after a native passkey operation
+fails. They are rate-limited and intentionally exclude credential ceremony
+material and user-entered account data. The app shows a copyable report with
+the same diagnostic ID stored in server logs.
 
 Notification copy is deliberately generic. Notes and names never enter an APNs
 payload. Push is optional and not a source of truth.

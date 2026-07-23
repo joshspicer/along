@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/widgets/async_button.dart';
@@ -18,6 +19,7 @@ class PasskeyScreen extends ConsumerStatefulWidget {
 class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
   final _nameController = TextEditingController();
   String? _error;
+  String? _debugReport;
 
   @override
   void dispose() {
@@ -61,6 +63,15 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
+            if (_debugReport != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _copyDiagnostics,
+                  icon: const Icon(Icons.copy_rounded),
+                  label: const Text('Copy diagnostics'),
+                ),
+              ),
           ],
           const SizedBox(height: 24),
           AsyncButton(
@@ -82,7 +93,10 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
       setState(() => _error = 'Add the name you want your partner to see.');
       return;
     }
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _debugReport = null;
+    });
     try {
       if (widget.login) {
         await ref.read(authControllerProvider.notifier).signIn();
@@ -93,8 +107,22 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
       }
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _error = friendlyNetworkError(error));
+        setState(() {
+          _error = friendlyNetworkError(error);
+          _debugReport = error is PasskeyException ? error.debugReport : null;
+        });
       }
+    }
+  }
+
+  Future<void> _copyDiagnostics() async {
+    final report = _debugReport;
+    if (report == null) return;
+    await Clipboard.setData(ClipboardData(text: report));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Diagnostics copied.')),
+      );
     }
   }
 }

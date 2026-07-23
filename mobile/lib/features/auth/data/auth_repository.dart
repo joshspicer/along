@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/network/token_coordinator.dart';
 import '../../../core/platform/passkey_service.dart';
 import '../../../core/secure/secure_store.dart';
@@ -52,8 +53,11 @@ class AuthRepository {
           data: <String, Object?>{'display_name': displayName},
         );
     final options = optionsResponse.data!;
-    final credential = await passkeyService.register(
-      Map<String, Object?>.from(options['publicKey']! as Map),
+    final publicKey = Map<String, Object?>.from(options['publicKey']! as Map);
+    final credential = await _passkeyCredential(
+      operation: 'register',
+      publicKey: publicKey,
+      invoke: () => passkeyService.register(publicKey),
     );
     final response = await tokens.publicClient.post<Map<String, Object?>>(
       '/v1/auth/register/finish',
@@ -77,8 +81,11 @@ class AuthRepository {
           data: const <String, Object?>{},
         );
     final options = optionsResponse.data!;
-    final credential = await passkeyService.authenticate(
-      Map<String, Object?>.from(options['publicKey']! as Map),
+    final publicKey = Map<String, Object?>.from(options['publicKey']! as Map);
+    final credential = await _passkeyCredential(
+      operation: 'authenticate',
+      publicKey: publicKey,
+      invoke: () => passkeyService.authenticate(publicKey),
     );
     final response = await tokens.publicClient.post<Map<String, Object?>>(
       '/v1/auth/login/finish',
@@ -122,8 +129,11 @@ class AuthRepository {
       data: const <String, Object?>{},
     );
     final options = optionsResponse.data!;
-    final credential = await passkeyService.register(
-      Map<String, Object?>.from(options['publicKey']! as Map),
+    final publicKey = Map<String, Object?>.from(options['publicKey']! as Map);
+    final credential = await _passkeyCredential(
+      operation: 'add',
+      publicKey: publicKey,
+      invoke: () => passkeyService.register(publicKey),
     );
     await tokens.client.post<void>(
       '/v1/auth/passkeys/finish',
@@ -219,6 +229,43 @@ class AuthRepository {
 
   Future<String> _deviceName() async =>
       Platform.isIOS ? 'iPhone or iPad' : 'Android device';
+
+  Future<Map<String, Object?>> _passkeyCredential({
+    required String operation,
+    required Map<String, Object?> publicKey,
+    required Future<Map<String, Object?>> Function() invoke,
+  }) async {
+    try {
+      return await invoke();
+    } on PasskeyCancelled {
+      rethrow;
+    } on PasskeyException catch (error) {
+      String? diagnosticId;
+      try {
+        final rp = publicKey['rp'];
+        final relyingPartyId = rp is Map ? rp['id']?.toString() ?? '' : '';
+        final response = await tokens.publicClient.post<Map<String, Object?>>(
+          '/v1/diagnostics/passkey',
+          data: <String, Object?>{
+            'platform': Platform.isIOS ? 'ios' : 'android',
+            'operation': operation,
+            'relying_party_id': relyingPartyId,
+            'error_domain': error.details['domain']?.toString() ?? '',
+            'error_code': error.details['code'] is int
+                ? error.details['code']
+                : int.tryParse(error.details['code']?.toString() ?? '') ?? 0,
+            'error_description':
+                error.details['description']?.toString() ?? error.message,
+            'app_commit': AppConfig.gitCommit,
+          },
+        );
+        diagnosticId = response.data?['diagnostic_id']?.toString();
+      } on Object {
+        // Diagnostics are best-effort and never replace the passkey failure.
+      }
+      throw error.withDiagnosticId(diagnosticId);
+    }
+  }
 }
 
 String friendlyNetworkError(Object error) {

@@ -67,6 +67,10 @@ func New(
 	router.Get("/.well-known/apple-app-site-association", api.appleAppSiteAssociation)
 	router.Get("/.well-known/assetlinks.json", api.androidAssetLinks)
 	router.Get("/v1/meta", api.meta)
+	router.With(api.rateLimitMiddleware(newRateLimiter(10, time.Minute))).Post(
+		"/v1/diagnostics/passkey",
+		api.passkeyDiagnostic,
+	)
 
 	router.Route("/v1/auth", func(r chi.Router) {
 		r.Use(api.rateLimitMiddleware(newRateLimiter(30, time.Minute)))

@@ -25,8 +25,8 @@ RUN apk add --no-cache ca-certificates tzdata && \
 WORKDIR /app
 COPY --from=build --chown=65532:65532 /out/alongd /out/migrate /out/apns-worker /app/
 USER 65532:65532
-EXPOSE 8080
+EXPOSE 6009
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD ["wget", "-q", "-O", "-", "http://127.0.0.1:8080/health/live"]
+  CMD ["wget", "-q", "-O", "-", "http://127.0.0.1:6009/health/live"]
 ENTRYPOINT ["/app/alongd"]
 

@@ -13,8 +13,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - 'compose.yaml'
+              - 'deploy/**'
+              - 'scripts/**'
+            mobile:
+              - 'mobile/**'
+
   go:
     name: Go checks and integration
+    needs: changes
+    if: needs.changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -57,6 +79,8 @@ jobs:
 
   flutter:
     name: Flutter analysis, tests, and Android
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -94,6 +118,8 @@ jobs:
 
   ios:
     name: Unsigned iOS simulator
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     defaults:
       run:
@@ -123,6 +149,8 @@ jobs:
 
   container:
     name: Container, migrations, and security
+    needs: changes
+    if: needs.changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

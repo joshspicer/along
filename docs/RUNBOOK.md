@@ -31,9 +31,15 @@ deploy mutable `latest` in production.
 ```sh
 docker compose pull
 docker compose run --rm migrate
-docker compose up -d postgres api apns
+docker compose up -d postgres along
 docker compose ps
 curl --fail https://along.spicer.dev/health/ready
+```
+
+When APNs is configured, start the push worker with:
+
+```sh
+docker compose --profile push up -d apns
 ```
 
 Migrations take a PostgreSQL advisory lock, run transactionally, and are safe to

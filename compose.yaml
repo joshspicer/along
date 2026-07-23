@@ -93,6 +93,7 @@ services:
       - no-new-privileges:true
 
   apns:
+    profiles: ["push"]
     image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
     entrypoint: ["/app/apns-worker"]
     restart: unless-stopped

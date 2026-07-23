@@ -56,8 +56,8 @@ services:
       args:
         GIT_COMMIT: ${GIT_COMMIT:-development}
     restart: unless-stopped
-    ports:
-      - "6009:6009"
+    expose:
+      - "6009"
     environment:
       ALONG_ENV: ${ALONG_ENV:-production}
       HTTP_ADDRESS: :6009

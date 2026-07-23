@@ -58,7 +58,7 @@ docker run --rm -d --name "$api" --network "$network" \
   --read-only $common_env "$image" >/dev/null
 
 attempt=0
-until docker exec "$api" wget -q -O - http://127.0.0.1:8080/health/ready >/dev/null 2>&1; do
+until docker exec "$api" wget -q -O - http://127.0.0.1:6009/health/ready >/dev/null 2>&1; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 30 ]; then
     docker logs "$api"
@@ -67,4 +67,4 @@ until docker exec "$api" wget -q -O - http://127.0.0.1:8080/health/ready >/dev/n
   sleep 1
 done
 
-docker exec "$api" wget -q -O - http://127.0.0.1:8080/v1/meta
+docker exec "$api" wget -q -O - http://127.0.0.1:6009/v1/meta

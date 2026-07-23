@@ -4,15 +4,16 @@
 
 - A Linux host with Docker Engine 29+ and Compose v2
 - DNS for `along.spicer.dev` pointed at the host, with port 6009 reachable behind a reverse proxy
+- The Nginx Proxy Manager Docker network (default `nginx-proxy-manager_default`)
 - PostgreSQL storage on encrypted durable media
-- Apple Team ID, APNs key ID, and an APNs `.p8` with push permission
-- An age recipient whose private identity is held off-host
-- An HTTPS PUT backup gateway in a separate account or failure domain
+- For push notifications: Apple Team ID, APNs key ID, and an APNs `.p8`
+- For backups: an off-host age identity and HTTPS PUT backup gateway
 
 Generate local secret files with `./scripts/generate-secrets.sh`. Add
-`secrets/AuthKey.p8` and `secrets/backup_upload_token` manually. Never copy an age
-private identity, Apple key, or signing credential into the repository or image.
-Set file mode `0600`.
+`secrets/AuthKey.p8` before enabling the `push` profile and
+`secrets/backup_upload_token` before enabling the `operations` profile. Never
+copy an age private identity, Apple key, or signing credential into the
+repository or image. Set secret file mode `0600`.
 
 Before production, replace both `REPLACE_WITH` values under
 `deploy/well-known/`, then run:
@@ -27,6 +28,10 @@ docker compose config --quiet
 
 Pin `ALONG_SERVER_IMAGE` to an immutable version or digest in `.env`; do not
 deploy mutable `latest` in production.
+
+Set `NPM_NETWORK` in `.env` if Nginx Proxy Manager uses a network name other
+than `nginx-proxy-manager_default`. Configure its proxy host to forward
+`along.spicer.dev` to `http://along:6009`.
 
 ```sh
 docker compose pull

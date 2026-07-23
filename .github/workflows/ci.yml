@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -30,8 +31,10 @@ jobs:
               - 'compose.yaml'
               - 'deploy/**'
               - 'scripts/**'
+              - '.github/workflows/**'
             mobile:
               - 'mobile/**'
+              - '.github/workflows/**'
 
   go:
     name: Go checks and integration

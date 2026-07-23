@@ -21,7 +21,7 @@ local secrets:
 
 ```sh
 ./scripts/generate-secrets.sh
-docker compose up --build postgres migrate api
+docker compose up --build postgres migrate along
 ```
 
 The API is available at `http://localhost:6009`. See

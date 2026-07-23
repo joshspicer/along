@@ -24,7 +24,7 @@ services:
       - no-new-privileges:true
 
   migrate:
-    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
+    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:main}
     build:
       context: ./server
       args:
@@ -50,7 +50,7 @@ services:
       - no-new-privileges:true
 
   along:
-    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
+    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:main}
     build:
       context: ./server
       args:
@@ -94,7 +94,7 @@ services:
 
   apns:
     profiles: ["push"]
-    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:latest}
+    image: ${ALONG_SERVER_IMAGE:-ghcr.io/joshspicer/along-server:main}
     entrypoint: ["/app/apns-worker"]
     restart: unless-stopped
     environment:
@@ -104,8 +104,8 @@ services:
       PUSH_ENCRYPTION_KEY_FILE: /run/secrets/push_encryption_key
       WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-along.spicer.dev}
       WEBAUTHN_RP_ORIGINS: ${WEBAUTHN_RP_ORIGINS:-https://along.spicer.dev}
-      APNS_TEAM_ID: ${APNS_TEAM_ID}
-      APNS_KEY_ID: ${APNS_KEY_ID}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
       APNS_KEY_PATH: /run/secrets/apns_key
       APNS_TOPIC: com.joshspicer.along
       APNS_ENVIRONMENT: ${APNS_ENVIRONMENT:-production}
@@ -128,8 +128,8 @@ services:
     build: ./deploy/backup
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
-      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT}
-      BACKUP_UPLOAD_URL: ${BACKUP_UPLOAD_URL}
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
+      BACKUP_UPLOAD_URL: ${BACKUP_UPLOAD_URL:-}
       BACKUP_UPLOAD_TOKEN_FILE: /run/secrets/backup_upload_token
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
     secrets:

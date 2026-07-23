@@ -46,7 +46,7 @@ func Load() (Config, error) {
 	}
 	cfg := Config{
 		Environment:        env("ALONG_ENV", "development"),
-		HTTPAddress:        env("HTTP_ADDRESS", ":8080"),
+		HTTPAddress:        env("HTTP_ADDRESS", ":6009"),
 		DatabaseURL:        databaseURL,
 		PublicBaseURL:      env("PUBLIC_BASE_URL", "https://localhost"),
 		WebAuthnRPID:       env("WEBAUTHN_RP_ID", "localhost"),

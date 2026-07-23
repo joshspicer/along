@@ -84,6 +84,9 @@ services:
       interval: 15s
       timeout: 3s
       retries: 5
+    networks:
+      - default
+      - npm
     mem_limit: 256m
     cpus: 1.0
     security_opt:
@@ -139,6 +142,11 @@ services:
     read_only: true
     security_opt:
       - no-new-privileges:true
+
+networks:
+  npm:
+    external: true
+    name: ${NPM_NETWORK:-nginx-proxy-manager_default}
 
 volumes:
   postgres_data:

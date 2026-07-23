@@ -11,4 +11,19 @@ void main() {
     expect(page.opaque, isTrue);
     expect(page.transitionDuration, Duration.zero);
   });
+
+  test('invite survives redirects through account recovery', () {
+    const invite = 'private_token-with-safe.characters';
+
+    expect(
+      inviteLocationForTest('/recovery-kit', invite),
+      '/recovery-kit?invite=private_token-with-safe.characters',
+    );
+    expect(inviteLocationForTest('/recovery-kit', null), '/recovery-kit');
+    expect(postRecoveryLocationForTest(invite), '/join/$invite');
+  });
+
+  test('account setup without an invitation ends at focus', () {
+    expect(postRecoveryLocationForTest(null), '/focus');
+  });
 }

@@ -16,6 +16,10 @@ void main() {
       (await container.read(runtimeConfigProvider.future)).apiBaseUrl,
       AppConfig.defaultApiBaseUrl,
     );
+    expect(
+      (await container.read(runtimeConfigProvider.future)).passkeyBaseUrl,
+      AppConfig.productionApiBaseUrl,
+    );
 
     await container
         .read(runtimeConfigProvider.notifier)
@@ -26,6 +30,8 @@ void main() {
         );
     final custom = await container.read(runtimeConfigProvider.future);
     expect(custom.apiBaseUrl, 'https://staging.example.test');
+    expect(custom.passkeyBaseUrl, AppConfig.developmentPasskeyBaseUrl);
+    expect(custom.passkeyRelyingPartyId, 'along-dev.spicer.dev');
     expect(custom.apnsEnvironment, 'sandbox');
     expect(custom.requestTimeoutSeconds, 45);
 

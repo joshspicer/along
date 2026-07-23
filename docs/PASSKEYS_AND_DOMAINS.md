@@ -21,8 +21,9 @@ steps before passkeys work outside development:
    `https://along.spicer.dev/.well-known/apple-app-site-association` with
    `Content-Type: application/json`, HTTP 200, no redirect, and a valid public
    certificate. The reverse proxy must handle TLS termination.
-5. Keep `applinks:along.spicer.dev` and `webcredentials:along.spicer.dev` in the signed iOS
-   entitlements. Regenerate distribution profiles after enabling capabilities.
+5. Keep the production and development `applinks` and `webcredentials` domains
+   in the signed iOS entitlements. Regenerate distribution profiles after
+   enabling capabilities.
 6. Set `ANDROID_SIGNING_SHA256` to the uppercase SHA-256 fingerprint from
    **Play App Signing**, not a local debug key. The API serves the generated
    document at `/.well-known/assetlinks.json` without a redirect.
@@ -36,6 +37,19 @@ change to propagate. A staging build needs its own owned domain, RP ID,
 application identifier, AASA entry, asset link, and provisioning profile.
 Native passkey ceremonies cannot be meaningfully tested against an unassociated
 localhost application.
+
+## Local API with native passkeys
+
+The mobile app separates ordinary API traffic from passkey ceremonies:
+
+- `https://along.spicer.dev` API traffic uses the production passkey endpoint.
+- Any other API endpoint uses `https://along-dev.spicer.dev` for passkeys.
+
+Point `along-dev.spicer.dev` at the same local server through a named HTTPS
+tunnel. Configure that server with `ALONG_DOMAIN=along-dev.spicer.dev`, and
+serve valid AASA and asset-links documents from the tunnel. The app can then
+keep API, sync, and WebSocket traffic on localhost while Apple or Android
+performs passkey ceremonies for the associated development relying party.
 
 ## Ceremony and recovery policy
 

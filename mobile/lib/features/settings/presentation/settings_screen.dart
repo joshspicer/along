@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
@@ -58,14 +58,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
-              if (account.pairId == null)
-                ListTile(
-                  minTileHeight: 56,
-                  leading: const Icon(Icons.people_alt_outlined),
-                  title: const Text('Pair with one person'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push('/pair'),
-                ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.all(12),
@@ -201,7 +193,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 minTileHeight: 56,
                 leading: const Icon(Icons.upload_file_outlined),
                 title: const Text('Upload diagnostics'),
-                subtitle: const Text('Send recent technical events to support.'),
+                subtitle: const Text(
+                  'Send recent technical events to support.',
+                ),
                 onTap: _uploadDiagnostics,
               ),
               ListTile(
@@ -259,7 +253,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(id == null ? 'No diagnostics uploaded.' : 'Diagnostics uploaded: $id'),
+          content: Text(
+            id == null
+                ? 'No diagnostics uploaded.'
+                : 'Diagnostics uploaded: $id',
+          ),
         ),
       );
     }
@@ -269,9 +267,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final report = ref.read(diagnosticServiceProvider).debugReport;
     await Clipboard.setData(ClipboardData(text: report));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Diagnostics copied.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Diagnostics copied.')));
     }
   }
 

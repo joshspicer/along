@@ -27,9 +27,10 @@ class SessionRepository {
 
   Future<FocusSession> start(AuthAccount account) async {
     final now = DateTime.now().toUtc();
+    final localOnly = account.pairId == null;
     final session = FocusSession(
       id: _uuid.v4(),
-      pairId: account.pairId!,
+      pairId: localOnly ? 'solo-${account.id}' : account.pairId!,
       startedBy: account.id,
       state: SessionState.open,
       durationSeconds: 1500,
@@ -44,6 +45,11 @@ class SessionRepository {
         ),
       ],
     );
+    if (localOnly) {
+      final solo = session.copyWith(offlineOrigin: true);
+      await _database.upsertSession(solo);
+      return solo;
+    }
     final command = PendingCommand(
       id: _uuid.v4(),
       type: 'session.start',
@@ -126,7 +132,9 @@ class SessionRepository {
         pauseOrigin: null,
         version: session.version + 1,
       );
-      await _database.upsertSession(completed, pendingSync: true);
+      final localOnly = session.pairId.startsWith('solo-');
+      await _database.upsertSession(completed, pendingSync: !localOnly);
+      if (localOnly) return;
       await _database.enqueue(
         PendingCommand(
           id: _uuid.v4(),
@@ -149,8 +157,12 @@ class SessionRepository {
     await _command(session, 'session.complete');
   }
 
-  Future<void> cancel(FocusSession session) =>
-      _command(session, 'session.cancel');
+  Future<void> cancel(FocusSession session) {
+    if (session.offlineOrigin) {
+      return _database.deleteSession(session.id);
+    }
+    return _command(session, 'session.cancel');
+  }
 
   Future<void> cheer(FocusSession session) =>
       _command(session, 'session.cheer', expectedVersion: false);

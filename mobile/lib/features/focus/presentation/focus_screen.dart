@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/widgets/along_mark.dart';
@@ -21,8 +24,17 @@ class FocusScreen extends ConsumerStatefulWidget {
 
 class _FocusScreenState extends ConsumerState<FocusScreen> {
   bool _busy = false;
+  bool _inviteBusy = false;
   bool _offline = false;
   String? _error;
+  Uri? _invite;
+  Timer? _pairPoll;
+
+  @override
+  void dispose() {
+    _pairPoll?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,9 +87,12 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                   repository: repository,
                   offline: _offline,
                   busy: _busy,
+                  inviteBusy: _inviteBusy,
+                  inviteReady: _invite != null,
                   error: _error,
                   onStart: _start,
                   onJoin: _join,
+                  onInvite: _invitePerson,
                 );
               },
             ),
@@ -104,6 +119,57 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
         context.go('/live/${session.id}');
       }
     });
+  }
+
+  Future<void> _invitePerson() async {
+    setState(() {
+      _inviteBusy = true;
+      _error = null;
+    });
+    try {
+      var invite = _invite;
+      if (invite == null) {
+        invite = await ref
+            .read(authControllerProvider.notifier)
+            .createPairInvite();
+        if (mounted) {
+          setState(() => _invite = invite);
+          _pairPoll ??= Timer.periodic(
+            const Duration(seconds: 5),
+            (_) => _checkForPartner(),
+          );
+        }
+      }
+      await SharePlus.instance.share(
+        ShareParams(
+          subject: 'Join me in Along',
+          text: 'Join our private Along space:\n$invite',
+        ),
+      );
+    } on Object catch (error) {
+      if (mounted) {
+        ref.read(diagnosticServiceProvider).record('pairing.failure', {
+          'operation': 'create_or_share',
+          'error_type': error.runtimeType.toString(),
+        });
+        setState(() => _error = friendlyNetworkError(error));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _inviteBusy = false);
+      }
+    }
+  }
+
+  Future<void> _checkForPartner() async {
+    try {
+      await ref.read(authControllerProvider.notifier).refreshAccount();
+      if (ref.read(authControllerProvider).value?.account?.pairId != null) {
+        _pairPoll?.cancel();
+      }
+    } on Object {
+      // The next quiet poll retries while the invitation is active.
+    }
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -167,9 +233,12 @@ class _FocusContent extends StatelessWidget {
     required this.repository,
     required this.offline,
     required this.busy,
+    required this.inviteBusy,
+    required this.inviteReady,
     required this.error,
     required this.onStart,
     required this.onJoin,
+    required this.onInvite,
   });
 
   final AuthAccount account;
@@ -177,9 +246,12 @@ class _FocusContent extends StatelessWidget {
   final SessionRepository repository;
   final bool offline;
   final bool busy;
+  final bool inviteBusy;
+  final bool inviteReady;
   final String? error;
   final VoidCallback onStart;
   final ValueChanged<FocusSession> onJoin;
+  final VoidCallback onInvite;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +259,7 @@ class _FocusContent extends StatelessWidget {
     final partnerActive =
         current != null && !current.includes(account.id) && current.isActive;
     final partnerName = account.partnerName ?? 'Your partner';
+    final hasPartner = account.pairId != null && !account.isOfflineOnly;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       child: Center(
@@ -195,7 +268,7 @@ class _FocusContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (!offline && !account.isOfflineOnly)
+              if (!offline && hasPartner)
                 _PartnerStatus(
                   name: partnerName,
                   active: partnerActive,
@@ -235,7 +308,9 @@ class _FocusContent extends StatelessWidget {
                 current == null
                     ? offline || account.isOfflineOnly
                           ? 'Solo focus stays on this device.'
-                          : '$partnerName can join anytime.'
+                          : hasPartner
+                          ? '$partnerName can join anytime.'
+                          : 'Solo by default. Invite someone when you want.'
                     : partnerActive
                     ? 'The same clock keeps running.'
                     : current.offlineOrigin
@@ -275,6 +350,26 @@ class _FocusContent extends StatelessWidget {
                   icon: Icons.timer_outlined,
                   onPressed: () => context.go('/live/${current.id}'),
                 ),
+              if (!offline && !hasPartner && !account.isOfflineOnly) ...[
+                const SizedBox(height: 12),
+                AsyncButton(
+                  label: inviteReady
+                      ? 'Share invitation again'
+                      : 'Invite someone',
+                  icon: Icons.ios_share_rounded,
+                  outlined: true,
+                  busy: inviteBusy,
+                  onPressed: onInvite,
+                ),
+                if (inviteReady) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Invitation ready. You can keep focusing while they join.',
+                    textAlign: TextAlign.center,
+                    style: context.textTheme.bodySmall,
+                  ),
+                ],
+              ],
             ],
           ),
         ),

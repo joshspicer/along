@@ -21,10 +21,7 @@ class AuthController extends AsyncNotifier<AuthState> {
       'paired': restored.account?.pairId != null,
       'source': 'restore',
     });
-    if (restored.isSignedIn && restored.account?.pairId != null) {
-      ref.read(syncEngineProvider).startRealtime();
-      unawaited(ref.read(syncEngineProvider).syncNow());
-    }
+    _startRealtimeIfPaired(restored.account);
     return restored;
   }
 
@@ -65,8 +62,7 @@ class AuthController extends AsyncNotifier<AuthState> {
           notificationsExplained: next.notificationsExplained,
         );
     state = AsyncData(next);
-    ref.read(syncEngineProvider).startRealtime();
-    unawaited(ref.read(syncEngineProvider).syncNow());
+    _startRealtimeIfPaired(account);
   }
 
   void acknowledgeRecoveryKit() {
@@ -106,6 +102,14 @@ class AuthController extends AsyncNotifier<AuthState> {
   Future<void> refreshAccount() async {
     final account = await _pairs.refreshAccount();
     state = AsyncData(state.requireValue.copyWith(account: account));
+    _startRealtimeIfPaired(account);
+  }
+
+  void _startRealtimeIfPaired(AuthAccount? account) {
+    if (account?.pairId == null) return;
+    final sync = ref.read(syncEngineProvider);
+    sync.startRealtime();
+    unawaited(sync.syncNow());
   }
 
   Future<void> _run(Future<AuthState> Function() action) async {

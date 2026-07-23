@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/config/runtime_config.dart';
+import '../../../core/platform/passkey_service.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/async_button.dart';
 import '../data/auth_repository.dart';
@@ -30,6 +33,10 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
   @override
   Widget build(BuildContext context) {
     final busy = ref.watch(authControllerProvider).isLoading;
+    final passkeyRelyingParty = ref
+        .watch(runtimeConfigProvider)
+        .value
+        ?.passkeyRelyingPartyId;
     return OnboardingScaffold(
       eyebrow: widget.login ? 'Welcome back' : 'Private account',
       title: widget.login
@@ -82,9 +89,18 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
             busy: busy,
             onPressed: _submit,
           ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: busy ? null : () => context.push('/settings/advanced'),
+            child: const Text('Connection settings'),
+          ),
         ],
       ),
-      footer: const Text('Protected by your device.'),
+      footer: Text(
+        passkeyRelyingParty == null
+            ? 'Protected by your device.'
+            : 'Protected by your device for $passkeyRelyingParty.',
+      ),
     );
   }
 
@@ -120,9 +136,9 @@ class _PasskeyScreenState extends ConsumerState<PasskeyScreen> {
     if (report == null) return;
     await Clipboard.setData(ClipboardData(text: report));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Diagnostics copied.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Diagnostics copied.')));
     }
   }
 }

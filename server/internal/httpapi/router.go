@@ -71,6 +71,10 @@ func New(
 		"/v1/diagnostics/passkey",
 		api.passkeyDiagnostic,
 	)
+	router.With(api.rateLimitMiddleware(newRateLimiter(30, time.Minute))).Post(
+		"/v1/diagnostics/events",
+		api.appDiagnostics,
+	)
 
 	router.Route("/v1/auth", func(r chi.Router) {
 		r.Use(api.rateLimitMiddleware(newRateLimiter(30, time.Minute)))

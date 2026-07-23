@@ -118,6 +118,14 @@ CustomTransitionPage<void> appPageForTest(Widget child) => CustomTransitionPage(
 String? _redirect(Ref ref, GoRouterState route) {
   final authAsync = ref.read(authControllerProvider);
   final path = route.uri.path;
+  String? redirect(String destination, String reason) {
+    ref.read(diagnosticServiceProvider).record('route.redirect', {
+      'from': _diagnosticRoute(path),
+      'to': _diagnosticRoute(destination),
+      'reason': reason,
+    });
+    return destination;
+  }
   final auth = switch (authAsync) {
     AsyncData<AuthState>(:final value) => value,
     _ => null,
@@ -132,7 +140,7 @@ String? _redirect(Ref ref, GoRouterState route) {
     final publicPath =
         path == '/welcome' || path == '/passkey' || path == '/recover';
     if (path.startsWith('/join/') && invite != null) {
-      return '/welcome?invite=$invite';
+      return redirect('/welcome?invite=$invite', 'signed_out_invite');
     }
     if (auth.isOfflineGuest) {
       if (path == '/splash' ||
@@ -142,29 +150,36 @@ String? _redirect(Ref ref, GoRouterState route) {
           path == '/pair' ||
           path.startsWith('/join/') ||
           path == '/notifications') {
-        return '/focus';
+        return redirect('/focus', 'offline_guest');
       }
       return null;
     }
-    return publicPath ? null : '/welcome';
+    return publicPath ? null : redirect('/welcome', 'signed_out');
   }
   if (auth.recoveryKit != null && path != '/recovery-kit') {
-    return '/recovery-kit';
+    return redirect('/recovery-kit', 'recovery_kit');
   }
   if (auth.recoveryKit == null && path == '/recovery-kit') {
-    return '/pair';
+    return redirect('/pair', 'recovery_acknowledged');
   }
   if (auth.account?.pairId == null) {
     if (path.startsWith('/join/') || path == '/pair') {
       return null;
     }
     if (invite != null) {
-      return '/join/$invite';
+      return redirect('/join/$invite', 'incoming_invite');
     }
-    return '/pair';
+    if (path == '/splash' ||
+        path == '/welcome' ||
+        path == '/passkey' ||
+        path == '/recover' ||
+        path == '/notifications') {
+      return redirect('/focus', 'unpaired_solo');
+    }
+    return null;
   }
   if (!auth.notificationsExplained && path != '/notifications') {
-    return '/notifications';
+    return redirect('/notifications', 'notification_setup');
   }
   if (path == '/splash' ||
       path == '/welcome' ||
@@ -173,9 +188,16 @@ String? _redirect(Ref ref, GoRouterState route) {
       path == '/pair' ||
       path.startsWith('/join/') ||
       path == '/notifications') {
-    return '/focus';
+    return redirect('/focus', 'authenticated');
   }
   return null;
+}
+
+String _diagnosticRoute(String path) {
+  if (path.startsWith('/join/')) return '/join/:token';
+  if (path.startsWith('/live/')) return '/live/:sessionId';
+  if (path.startsWith('/complete/')) return '/complete/:sessionId';
+  return Uri.tryParse(path)?.path ?? path;
 }
 
 class _AuthRouterRefresh extends ChangeNotifier {

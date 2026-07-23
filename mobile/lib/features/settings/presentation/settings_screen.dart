@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
@@ -57,6 +58,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
+              if (account.pairId == null)
+                ListTile(
+                  minTileHeight: 56,
+                  leading: const Icon(Icons.people_alt_outlined),
+                  title: const Text('Pair with one person'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/pair'),
+                ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.all(12),
@@ -188,6 +197,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Advanced'),
                 onTap: () => context.push('/settings/advanced'),
               ),
+              ListTile(
+                minTileHeight: 56,
+                leading: const Icon(Icons.upload_file_outlined),
+                title: const Text('Upload diagnostics'),
+                subtitle: const Text('Send recent technical events to support.'),
+                onTap: _uploadDiagnostics,
+              ),
+              ListTile(
+                minTileHeight: 56,
+                leading: const Icon(Icons.copy_rounded),
+                title: const Text('Copy diagnostics'),
+                onTap: _copyDiagnostics,
+              ),
               FutureBuilder<PackageInfo>(
                 future: PackageInfo.fromPlatform(),
                 builder: (context, snapshot) => ListTile(
@@ -229,6 +251,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         setState(() => _error = friendlyNetworkError(error));
       }
+    }
+  }
+
+  Future<void> _uploadDiagnostics() async {
+    final id = await ref.read(diagnosticServiceProvider).upload();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(id == null ? 'No diagnostics uploaded.' : 'Diagnostics uploaded: $id'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _copyDiagnostics() async {
+    final report = ref.read(diagnosticServiceProvider).debugReport;
+    await Clipboard.setData(ClipboardData(text: report));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Diagnostics copied.')),
+      );
     }
   }
 

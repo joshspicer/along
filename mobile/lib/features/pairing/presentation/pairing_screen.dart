@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/providers.dart';
@@ -99,6 +100,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
           busy: _busy,
           onPressed: _accept,
         ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () => context.go('/focus'),
+          child: const Text('Continue solo'),
+        ),
         if (_error != null) ...[
           const SizedBox(height: 12),
           Text(
@@ -129,6 +135,10 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
       }
     } on Object catch (error) {
       if (mounted) {
+        ref.read(diagnosticServiceProvider).record('pairing.failure', {
+          'operation': 'create',
+          'error_type': error.runtimeType.toString(),
+        });
         setState(() => _error = friendlyNetworkError(error));
       }
     } finally {
@@ -166,6 +176,10 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
           .acceptPairInvite(_token.text);
     } on Object catch (error) {
       if (mounted) {
+        ref.read(diagnosticServiceProvider).record('pairing.failure', {
+          'operation': 'accept',
+          'error_type': error.runtimeType.toString(),
+        });
         setState(() => _error = friendlyNetworkError(error));
       }
     } finally {

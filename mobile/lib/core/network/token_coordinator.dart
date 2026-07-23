@@ -4,12 +4,20 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../config/runtime_config.dart';
+import '../diagnostics/diagnostic_service.dart';
 import '../secure/secure_store.dart';
 
 class TokenCoordinator {
-  TokenCoordinator(this._secureStore, RuntimeConfig config)
-    : _raw = Dio(_baseOptions(config)),
+  TokenCoordinator(
+    this._secureStore,
+    RuntimeConfig config, {
+    DiagnosticService? diagnostics,
+  }) : _diagnostics = diagnostics,
+    _raw = Dio(_baseOptions(config)),
       client = Dio(_baseOptions(config)) {
+    _raw.interceptors.add(
+      InterceptorsWrapper(onError: _recordFailure),
+    );
     client.interceptors.add(
       QueuedInterceptorsWrapper(
         onRequest: _authorize,
@@ -19,6 +27,7 @@ class TokenCoordinator {
   }
 
   final SecureStore _secureStore;
+  final DiagnosticService? _diagnostics;
   final Dio _raw;
   final Dio client;
   String? _accessToken;
@@ -83,12 +92,12 @@ class TokenCoordinator {
   ) async {
     if (error.response?.statusCode != HttpStatus.unauthorized ||
         error.requestOptions.extra['along_retried'] == true) {
-      handler.next(error);
+      _recordFailure(error, handler);
       return;
     }
     final refreshed = await refreshSession();
     if (refreshed == null) {
-      handler.next(error);
+      _recordFailure(error, handler);
       return;
     }
     try {
@@ -100,6 +109,26 @@ class TokenCoordinator {
     } on DioException catch (retryError) {
       handler.next(retryError);
     }
+  }
+
+  void _recordFailure(DioException error, ErrorInterceptorHandler handler) {
+    _diagnostics?.record('network.failure', <String, Object?>{
+      'method': error.requestOptions.method,
+      'path': _diagnosticPath(error.requestOptions.path),
+      'status': error.response?.statusCode ?? 0,
+      'type': error.type.name,
+    });
+    handler.next(error);
+  }
+
+  String _diagnosticPath(String value) {
+    final path = Uri.tryParse(value)?.path ?? value;
+    final segments = path.split('/').where((part) => part.isNotEmpty).toList();
+    if (segments.length <= 2) return '/${segments.join('/')}';
+    if (segments.length >= 3 && segments[1] == 'auth') {
+      return '/${segments.take(3).join('/')}';
+    }
+    return '/${segments.take(2).join('/')}';
   }
 
   Future<Map<String, Object?>?> _performRefresh(String? explicitToken) async {

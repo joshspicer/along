@@ -51,6 +51,28 @@ func TestBoundedPreservesValidUTF8(t *testing.T) {
 	}
 }
 
+func TestAppDiagnosticsAcceptsAllowlistedBoundedEvents(t *testing.T) {
+	var logs bytes.Buffer
+	api := &API{logger: slog.New(slog.NewJSONHandler(&logs, nil))}
+	body := `{"app_commit":"abc123","platform":"ios","events":[{"timestamp":"2026-07-23T17:00:00Z","name":"route.redirect","fields":{"from":"/pair","to":"/focus","reason":"unpaired_solo"}}]}`
+	request := httptest.NewRequest(http.MethodPost, "/v1/diagnostics/events", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	request = request.WithContext(withRequestID(request.Context(), "diagnostic-456"))
+	response := httptest.NewRecorder()
+
+	api.appDiagnostics(response, request)
+
+	if response.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(logs.String(), `"event_name":"route.redirect"`) {
+		t.Fatalf("log missing event name: %s", logs.String())
+	}
+	if strings.Contains(logs.String(), "token") || strings.Contains(logs.String(), "credential") {
+		t.Fatalf("log contains prohibited material: %s", logs.String())
+	}
+}
+
 func withRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey, id)
 }

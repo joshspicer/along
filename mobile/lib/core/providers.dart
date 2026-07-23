@@ -8,6 +8,7 @@ import '../features/auth/domain/auth_models.dart';
 import '../features/focus/data/session_repository.dart';
 import '../features/pairing/data/pair_repository.dart';
 import 'config/runtime_config.dart';
+import 'diagnostics/diagnostic_service.dart';
 import 'database/app_database.dart';
 import 'network/server_availability.dart';
 import 'network/token_coordinator.dart';
@@ -26,12 +27,24 @@ final secureStoreProvider = Provider<SecureStore>(
   (ref) => FlutterSecureStore(),
 );
 
+final diagnosticServiceProvider = Provider<DiagnosticService>((ref) {
+  final config = ref.watch(runtimeConfigProvider).value;
+  if (config == null) {
+    throw StateError('Runtime configuration is still loading.');
+  }
+  return DiagnosticService(config);
+});
+
 final tokenCoordinatorProvider = Provider<TokenCoordinator>((ref) {
   final config = ref.watch(runtimeConfigProvider).value;
   if (config == null) {
     throw StateError('Runtime configuration is still loading.');
   }
-  return TokenCoordinator(ref.watch(secureStoreProvider), config);
+  return TokenCoordinator(
+    ref.watch(secureStoreProvider),
+    config,
+    diagnostics: ref.watch(diagnosticServiceProvider),
+  );
 });
 
 final passkeyServiceProvider = Provider<PasskeyService>(
@@ -60,6 +73,7 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     ref.watch(databaseProvider),
     ref.watch(tokenCoordinatorProvider),
     config,
+    diagnostics: ref.watch(diagnosticServiceProvider),
   );
   unawaited(engine.initialize());
   ref.onDispose(() => unawaited(engine.stopRealtime()));

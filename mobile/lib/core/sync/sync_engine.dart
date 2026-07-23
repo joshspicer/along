@@ -7,6 +7,7 @@ import 'package:web_socket_channel/io.dart';
 import '../../features/focus/domain/focus_session.dart';
 import '../config/runtime_config.dart';
 import '../database/app_database.dart';
+import '../diagnostics/diagnostic_service.dart';
 import '../network/token_coordinator.dart';
 
 class SyncCommandException implements Exception {
@@ -20,11 +21,17 @@ class SyncCommandException implements Exception {
 }
 
 class SyncEngine {
-  SyncEngine(this._database, this._tokens, this._config);
+  SyncEngine(
+    this._database,
+    this._tokens,
+    this._config, {
+    DiagnosticService? diagnostics,
+  }) : _diagnostics = diagnostics;
 
   final AppDatabase _database;
   final TokenCoordinator _tokens;
   final RuntimeConfig _config;
+  final DiagnosticService? _diagnostics;
   Future<void>? _activeSync;
   Duration _serverOffset = Duration.zero;
   bool _running = false;
@@ -52,6 +59,12 @@ class SyncEngine {
     _activeSync = future;
     try {
       await future;
+    } on Object catch (error) {
+      _diagnostics?.record('sync.failure', {
+        'error_type': error.runtimeType.toString(),
+        'pending_commands': (await _database.pendingCommands()).length,
+      });
+      rethrow;
     } finally {
       if (identical(_activeSync, future)) {
         _activeSync = null;
@@ -204,7 +217,11 @@ class SyncEngine {
             break;
           }
         }
-      } on Object {
+      } on Object catch (error) {
+        _diagnostics?.record('realtime.failure', {
+          'error_type': error.runtimeType.toString(),
+          'retry_seconds': delay.inSeconds,
+        });
         // Durable cursor replay on reconnect is the recovery path.
       } finally {
         await _channel?.sink.close();

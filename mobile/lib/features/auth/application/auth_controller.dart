@@ -16,6 +16,11 @@ class AuthController extends AsyncNotifier<AuthState> {
   Future<AuthState> build() async {
     await ref.watch(runtimeConfigProvider.future);
     final restored = await _repository.restore();
+    ref.read(diagnosticServiceProvider).record('auth.state', {
+      'status': restored.status.name,
+      'paired': restored.account?.pairId != null,
+      'source': 'restore',
+    });
     if (restored.isSignedIn && restored.account?.pairId != null) {
       ref.read(syncEngineProvider).startRealtime();
       unawaited(ref.read(syncEngineProvider).syncNow());
@@ -107,6 +112,12 @@ class AuthController extends AsyncNotifier<AuthState> {
     state = const AsyncLoading();
     try {
       state = AsyncData(await action());
+      final auth = state.requireValue;
+      ref.read(diagnosticServiceProvider).record('auth.state', {
+        'status': auth.status.name,
+        'paired': auth.account?.pairId != null,
+        'recovery_kit': auth.recoveryKit != null,
+      });
     } on Object catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
       rethrow;

@@ -10,7 +10,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Run Prepare Flutter Framework Script"
-               scriptText = "/bin/sh &quot;$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh&quot; prepare&#10;">
+               scriptText = "if [ -z &quot;${FLUTTER_ROOT:-}&quot; ] &amp;&amp; [ -f &quot;$SRCROOT/Flutter/Generated.xcconfig&quot; ]; then&#10;  FLUTTER_ROOT=$(sed -n &apos;s/^FLUTTER_ROOT=//p&apos; &quot;$SRCROOT/Flutter/Generated.xcconfig&quot;)&#10;fi&#10;if [ -z &quot;${FLUTTER_ROOT:-}&quot; ]; then&#10;  echo &quot;FLUTTER_ROOT is unavailable; run ci_post_clone.sh or flutter pub get first&quot; &gt;&amp;2&#10;  exit 1&#10;fi&#10;/bin/sh &quot;$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh&quot; prepare&#10;">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"

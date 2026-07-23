@@ -17,6 +17,7 @@ import '../../features/settings/presentation/advanced_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../config/runtime_config.dart';
 import '../providers.dart';
+import 'keyboard_dismissal_observer.dart';
 import 'primary_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -24,6 +25,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
   final router = GoRouter(
     initialLocation: '/splash',
+    observers: [KeyboardDismissalObserver()],
     refreshListenable: refresh,
     redirect: (context, state) => _redirect(ref, state),
     routes: [
@@ -60,6 +62,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (_, _) => _page(const NotificationScreen()),
       ),
       ShellRoute(
+        observers: [KeyboardDismissalObserver()],
         pageBuilder: (_, state, child) =>
             _page(PrimaryScaffold(location: state.uri.path, child: child)),
         routes: [

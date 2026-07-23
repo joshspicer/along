@@ -21,12 +21,7 @@ class SyncCommandException implements Exception {
 }
 
 class SyncEngine {
-  SyncEngine(
-    this._database,
-    this._tokens,
-    this._config, {
-    DiagnosticService? diagnostics,
-  }) : _diagnostics = diagnostics;
+  SyncEngine(this._database, this._tokens, this._config, {this._diagnostics});
 
   final AppDatabase _database;
   final TokenCoordinator _tokens;
